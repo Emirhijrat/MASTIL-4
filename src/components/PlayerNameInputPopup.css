@@ -6,51 +6,55 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.75); /* Slightly darker overlay */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 2000; /* High z-index to be on top */
+  z-index: 2000;
+  padding: 15px; /* Add padding for smaller screens */
+  box-sizing: border-box;
 }
 
 .popup-container.medieval-popup {
-  background-image: url('https://www.transparenttextures.com/patterns/parchment.png'); /* Parchment texture */
-  background-color: #f5e8c3; /* Fallback parchment color */
-  padding: 30px 40px;
+  background-image: url('https://www.transparenttextures.com/patterns/parchment.png');
+  background-color: #f5e8c3;
+  padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 10px #4a3b2a; /* Shadow and wooden border effect */
-  border: 2px solid #6b4f3a; /* Inner border */
-  width: 90%;
-  max-width: 550px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 8px #4a3b2a; /* Slightly smaller border */
+  border: 2px solid #6b4f3a;
+  width: 100%; /* Take full width within overlay padding */
+  max-width: 500px; /* Reduced max-width slightly */
   text-align: center;
-  font-family: 'Cinzel', serif; /* Medieval-themed font */
-  color: #3a2e1f; /* Dark brown text */
+  font-family: 'Cinzel', serif;
+  color: #3a2e1f;
+  overflow-y: auto; /* Allow scrolling if content overflows on small heights */
+  max-height: 90vh;
 }
 
 .popup-title {
-  font-family: 'MedievalSharp', cursive; /* More thematic font for title */
-  font-size: 2.5em;
+  font-family: 'MedievalSharp', cursive;
+  font-size: clamp(1.8em, 5vw, 2.5em); /* Responsive font size */
   margin-bottom: 15px;
   color: #5a3d2b;
   text-shadow: 1px 1px 1px #c8b89a;
 }
 
 .popup-description {
-  font-size: 1.1em;
-  margin-bottom: 25px;
-  line-height: 1.6;
+  font-size: clamp(0.9em, 2.5vw, 1.1em);
+  margin-bottom: 20px;
+  line-height: 1.5;
 }
 
 .popup-form .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   text-align: left;
 }
 
 .popup-form .form-label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: bold;
-  font-size: 1em;
+  font-size: clamp(0.85em, 2.2vw, 1em);
 }
 
 .medieval-input, .medieval-button {
@@ -58,13 +62,16 @@
   border: 2px solid #8b6b4c;
   background-color: #efe0b8;
   color: #4a3b2a;
-  padding: 10px 15px;
+  padding: 10px 12px; /* Adjusted padding */
   border-radius: 4px;
   transition: all 0.2s ease-in-out;
+  font-size: clamp(0.9em, 2.5vw, 1em); /* Responsive font for inputs/buttons */
+  min-height: var(--game-min-touch); /* Touch target size */
+  box-sizing: border-box;
 }
 
 .medieval-input {
-  width: calc(100% - 34px); /* Full width minus padding and border */
+  width: 100%; 
 }
 
 .medieval-input:focus {
@@ -74,17 +81,17 @@
 }
 
 .element-selection {
-  display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  margin-bottom: 25px;
+  display: grid; /* Use grid for better wrapping */
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Responsive columns */
+  gap: 10px; /* Gap between buttons */
+  margin-bottom: 20px;
 }
 
 .element-button {
-  margin: 5px;
+  /* margin: 5px; */ /* Removed in favor of grid gap */
   cursor: pointer;
-  font-size: 0.95em;
-  min-width: 100px;
+  /* min-width: 100px; */ /* Handled by grid */
+  text-align: center;
 }
 
 .element-button:hover {
@@ -93,13 +100,12 @@
 }
 
 .element-button.selected {
-  background-color: #6b4f3a; /* Darker brown for selected */
-  color: #f5e8c3; /* Light text for selected */
+  background-color: #6b4f3a;
+  color: #f5e8c3;
   border-color: #4a3b2a;
   box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
 }
 
-/* Optional: Specific elemental colors on hover/selection - simple example */
 .element-button.element-water.selected { background-color: #3b82f6; color: white; border-color: #1d4ed8; }
 .element-button.element-earth.selected { background-color: #84cc16; color: white; border-color: #4d7c0f; }
 .element-button.element-air.selected { background-color: #eab308; color: white; border-color: #a16207; }
@@ -109,11 +115,11 @@
   background-color: #78553a;
   color: #f5e8c3;
   font-weight: bold;
-  font-size: 1.2em;
-  padding: 12px 25px;
+  font-size: clamp(1em, 3vw, 1.2em);
+  padding: 12px 20px;
   width: auto;
   display: block;
-  margin: 20px auto 0 auto;
+  margin: 15px auto 0 auto;
   cursor: pointer;
 }
 

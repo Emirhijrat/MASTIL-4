@@ -3,6 +3,8 @@
 :root {
   /* Core game variables */
   --game-min-touch: 44px;
+  /* Define aspect ratio for the game area, e.g., 16:9 */
+  --game-aspect-ratio: calc(9 / 16);
 }
 
 .theme-light {
@@ -57,12 +59,11 @@
   --mastil-border: #334155;
 }
 
-html, body {
+html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  background: var(--mastil-bg-primary);
+  overflow: hidden; /* Prevent scrollbars on body/root */
 }
 
 body {
@@ -72,27 +73,76 @@ body {
   overscroll-behavior: none;
   user-select: none;
   color: var(--mastil-text-primary);
+  background: var(--mastil-bg-primary); /* Moved from html, body to just body */
 }
 
-#root {
-  height: 100%;
+/* App container takes full height and centers its content (game-container) */
+.app-container {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 1vmin; /* Small padding around the game area */
+  box-sizing: border-box;
 }
 
-/* Game area background - this is the main map background */
+/* Game container holds the game area wrapper and potentially other UI like top/bottom bars */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  /* Max width/height to prevent it from becoming too large on desktop */
+  /* On mobile, it will be constrained by viewport anyway */
+  width: 100%;
+  height: 100%;
+  max-width: 1200px; /* Example max width */
+  max-height: 90vh; /* Example max height relative to viewport */
+  box-sizing: border-box;
+  /* border: 2px solid red; /* For debugging layout */
+}
+
+.game-area-wrapper {
+  position: relative;
+  width: 100%;
+  /* Use padding-bottom to maintain aspect ratio, e.g., 16:9 or 4:3 */
+  /* padding-bottom: calc(100% * var(--game-aspect-ratio)); /* e.g., 100% * (9/16) for 16:9 */
+  /* For a square map, you might use 100%. Let's assume landscape-ish for now */
+  /* A simpler approach: make it take available space and let content scale */
+  flex-grow: 1;
+  /* border: 2px solid blue; /* For debugging layout */
+  overflow: hidden; /* Important if game-area uses absolute positioning and might overflow */
+}
+
 .game-area {
-  background-image: url('https://iili.io/3vCACrB.png'); /* Updated URL */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('https://iili.io/3voBpEP.png'); /* Updated URL */
   background-size: cover; 
   background-position: center center;
   background-repeat: no-repeat;
-  /* Fallback background-color if the image fails to load or for contrast */
   background-color: #101820; 
+  /* border: 2px solid green; /* For debugging layout */
 }
 
 
-@media (max-width: 640px) {
+@media (max-width: 768px) { /* Example breakpoint for tablets and smaller */
+  .game-container {
+    max-height: 100vh; /* Allow more height on mobile */
+    padding: 0; /* Remove padding on smaller screens if app-container handles it */
+  }
   body {
     font-size: 14px;
   }
+  /* Adjust other UI elements if needed */
+}
+
+@media (max-width: 480px) { /* Example breakpoint for phones */
+  body {
+    font-size: 12px;
+  }
+  /* Further adjustments */
 }
