@@ -5,7 +5,7 @@ interface LoadingScreenProps {
 }
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = "wird gestartet..." }) => {
-  const version = "Version 1.0.1"; // Updated version number
+  const version = "Version 1.0.2"; // Updated version number
 
   return (
     <div 
@@ -28,12 +28,11 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = "wird gestartet
         </div>
       </div>
 
-      {/* Version Text - Positioned at bottom-right */}
+      {/* Version Text - Positioned at bottom-center */}
       <div 
-        className="version-text fixed bottom-4 right-4 text-sm text-gray-400 opacity-75"
+        className="version-text fixed bottom-4 text-sm text-gray-400/75 backdrop-blur-sm px-3 py-1 rounded-full"
         style={{
-          // Ensure it's above most things but can be below specific popups if needed
-          zIndex: 10, 
+          zIndex: 10,
         }}
       >
         {version}

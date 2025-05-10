@@ -164,8 +164,23 @@ export function useGameState(config: GameConfig) {
   
   const checkWinCondition = useCallback(() => {
     if (gameOver || showPlayerInputPopup || buildings.length === 0) return;
+    
+    const enemyBase = buildings.find(b => b.id === 'b2' && b.owner === 'enemy');
+    const gameStartTime = localStorage.getItem('gameStartTime');
+    const now = Date.now();
+    
+    // Check if 9 hours have passed since game start
+    const nineHoursInMs = 9 * 60 * 60 * 1000;
+    const isInvulnerable = gameStartTime && (now - parseInt(gameStartTime)) < nineHoursInMs;
+    
+    if (isInvulnerable) {
+      console.log('[GameState] Enemy base is still invulnerable');
+      return;
+    }
+
     const playerBuildingCount = buildings.filter(b => b.owner === 'player').length;
     const enemyBuildingCount = buildings.filter(b => b.owner === 'enemy').length;
+    
     if (enemyBuildingCount === 0 && playerBuildingCount > 0) {
       setGameOver(true);
       setGameOverMessage(`Victory, Majestät ${playerName}! All enemy strongholds crumble before your ${playerElement} might!`);
@@ -255,59 +270,97 @@ export function useGameState(config: GameConfig) {
     return () => clearInterval(interval);
   }, [config.maxUnitsPerBuilding, config.maxBuildingLevel, gameOver, lastNeutralUpgrade, showPlayerInputPopup]);
 
+  // Add new state for neutral message cooldowns
+  const [lastNeutralIdleChatter, setLastNeutralIdleChatter] = useState(Date.now());
+  const [lastNeutralSupportMessage, setLastNeutralSupportMessage] = useState(Date.now());
+
+  // Neutral idle chatter effect
   useEffect(() => {
     const interval = setInterval(() => {
       if (!gameOver && !showPlayerInputPopup) {
-        setBuildings(prevBuildings => {
-          const neutralBuildings = prevBuildings.filter(b => b.owner === 'neutral');
-          if (neutralBuildings.length < 2) return prevBuildings;
-
-          const needyBuildings = neutralBuildings.filter(b => 
-            b.units < b.maxUnits * 0.8
-          ).sort((a, b) => (a.units / a.maxUnits) - (b.units / b.maxUnits));
-
-          if (needyBuildings.length === 0) return prevBuildings;
-
-          const supportBuildings = neutralBuildings.filter(b => 
-            b.units > 5 &&
-            b.units > b.maxUnits * 0.8
-          );
-
-          if (supportBuildings.length === 0) return prevBuildings;
-
-          const targetBuilding = needyBuildings[0];
-          const sourceBuilding = supportBuildings[Math.floor(Math.random() * supportBuildings.length)];
-
-          const surplusUnits = sourceBuilding.units - 5;
-          const unitsToSend = Math.floor(surplusUnits * 0.75);
-
-          if (unitsToSend > 0) {
-            console.log(`[Neutral] Sending ${unitsToSend} units from ${sourceBuilding.id} to ${targetBuilding.id}`);
-            
-            startUnitAnimation(sourceBuilding, targetBuilding, unitsToSend, 'neutral', (units) => {
-              handleUnitsArrival(targetBuilding.id, units, 'neutral');
-            });
-
-            return prevBuildings.map(building =>
-              building.id === sourceBuilding.id
-                ? { ...building, units: building.units - unitsToSend }
-                : building
-            );
+        const now = Date.now();
+        if (now - lastNeutralIdleChatter >= 30000) { // 30 second cooldown
+          const neutralBuildings = buildings.filter(b => b.owner === 'neutral');
+          if (neutralBuildings.length > 0 && Math.random() < 0.2) { // 20% chance
+            const randomBuilding = neutralBuildings[Math.floor(Math.random() * neutralBuildings.length)];
+            showMessage(getRandomMessage('neutral_idle_chatter'));
+            setLastNeutralIdleChatter(now);
           }
+        }
+      }
+    }, 5000);
 
-          return prevBuildings;
-        });
+    return () => clearInterval(interval);
+  }, [buildings, gameOver, showPlayerInputPopup, lastNeutralIdleChatter, showMessage]);
+
+  // Update the neutral support effect to include messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!gameOver && !showPlayerInputPopup) {
+        const now = Date.now();
+        if (now - lastNeutralSupportMessage >= 10000) { // 10 second cooldown
+          setBuildings(prevBuildings => {
+            const neutralBuildings = prevBuildings.filter(b => b.owner === 'neutral');
+            if (neutralBuildings.length < 2) return prevBuildings;
+
+            const needyBuildings = neutralBuildings.filter(b => 
+              b.units < b.maxUnits * 0.8
+            ).sort((a, b) => (a.units / a.maxUnits) - (b.units / b.maxUnits));
+
+            if (needyBuildings.length === 0) return prevBuildings;
+
+            const supportBuildings = neutralBuildings.filter(b => 
+              b.units > 5 &&
+              b.units > b.maxUnits * 0.8
+            );
+
+            if (supportBuildings.length === 0) return prevBuildings;
+
+            const targetBuilding = needyBuildings[0];
+            const sourceBuilding = supportBuildings[Math.floor(Math.random() * supportBuildings.length)];
+
+            const surplusUnits = sourceBuilding.units - 5;
+            const unitsToSend = Math.floor(surplusUnits * 0.75);
+
+            if (unitsToSend > 0) {
+              console.log(`[Neutral] Sending ${unitsToSend} units from ${sourceBuilding.id} to ${targetBuilding.id}`);
+              
+              // Show support message
+              showMessage(getRandomMessage('neutral_support_action'));
+              setLastNeutralSupportMessage(now);
+              
+              startUnitAnimation(sourceBuilding, targetBuilding, unitsToSend, 'neutral', (units) => {
+                handleUnitsArrival(targetBuilding.id, units, 'neutral');
+              });
+
+              return prevBuildings.map(building =>
+                building.id === sourceBuilding.id
+                  ? { ...building, units: building.units - unitsToSend }
+                  : building
+              );
+            }
+
+            return prevBuildings;
+          });
+        }
       }
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [gameOver, showPlayerInputPopup, startUnitAnimation]);
+  }, [gameOver, showPlayerInputPopup, startUnitAnimation, lastNeutralSupportMessage, showMessage]);
 
   useEffect(() => {
     if (!showPlayerInputPopup && buildings.length > 0 && !gameOver) { 
         checkWinCondition();
     }
   }, [buildings, checkWinCondition, showPlayerInputPopup, gameOver]);
+
+  const initializeGame = () => {
+    // Set game start time if not already set
+    if (!localStorage.getItem('gameStartTime')) {
+      localStorage.setItem('gameStartTime', Date.now().toString());
+    }
+  };
 
   return {
     buildings, selectedBuildingId, message, gameOver, gameOverMessage, playerBuildingCount: buildings.filter(b => b.owner === 'player').length, 
