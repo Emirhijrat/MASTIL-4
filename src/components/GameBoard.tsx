@@ -58,19 +58,19 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
   const buildingBaseSize = 6;
 
   return (
-    <div className="game-container w-full h-full flex flex-col" style={{ minHeight: '400px', minWidth: '600px'}}>
-      <div className="game-area-wrapper flex-grow relative w-full h-full"> 
+    <div className="game-container">
+      <div className="game-area-wrapper">
         <div 
           ref={gameAreaRef}
-          className="game-area w-full h-full relative overflow-hidden"
+          className="game-area"
           onClick={() => selectedBuildingId && selectBuilding('')} 
         >
           {buildings.map(building => {
             const isSelected = selectedBuildingId === building.id;
             const currentUpgradeCost = getUpgradeCost(building);
             const canUpgrade = building.owner === 'player' && 
-                               building.units >= currentUpgradeCost && 
-                               building.level < MAX_BUILDING_LEVEL;
+                             building.units >= currentUpgradeCost && 
+                             building.level < MAX_BUILDING_LEVEL;
 
             if (isSelected && building.owner === 'player') {
                 // console.log(`[GameBoard] Building ${building.id} selected (Player). Props for CUB:`);

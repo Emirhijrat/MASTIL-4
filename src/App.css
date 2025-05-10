@@ -13,11 +13,17 @@
 .theme-light { /* ... */ }
 .theme-dark { /* ... */ }
 
-html, body, #root {
-  height: 100%;
+html, body {
+  height: 100vh;
   margin: 0;
   padding: 0;
   overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 body {
@@ -28,79 +34,59 @@ body {
   user-select: none;
   color: var(--mastil-text-primary);
   background-color: #000; /* Black background for letterboxing, visible if app-container doesn't fill */
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-/* .app-container fills the viewport and centers the .game-container */
+/* App container */
 .app-container {
+  min-height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100vw;
-  height: 100vh;
-  padding: 0; /* No padding, let the game-container manage its own space/letterboxing */
-  box-sizing: border-box;
-  background-color: var(--mastil-bg-primary); /* The actual page background */
+  padding: 1rem;
 }
 
-/* .game-container is the element that will have the fixed aspect ratio and be centered */
+/* Game container */
 .game-container {
-  position: relative; /* Needed for .game-area to be absolute inside */
-  /* Determine if width or height should be the constraint */
-  /* Max width is 100vw, max height is 100vh */
-  /* If (viewport_width / viewport_height) > (aspect_w / aspect_h), then height is the constraint */
-  /* Else, width is the constraint */
-  
-  /* Using CSS aspect-ratio property for modern approach */
-  aspect-ratio: var(--game-aspect-w) / var(--game-aspect-h);
-  
-  /* Fit within the viewport */
-  /* Constrain by height first if viewport is wider than game aspect ratio */
-  max-height: 100vh;
-  max-width: calc(100vh * (var(--game-aspect-w) / var(--game-aspect-h)));
-  
-  /* If viewport is taller/narrower than game aspect ratio, constrain by width */
-  @media (orientation: portrait) { /* More specific for portrait scenarios */
-    max-width: 100vw;
-    max-height: calc(100vw * (var(--game-aspect-h) / var(--game-aspect-w)));
-  }
-   /* Fallback or alternative logic for older browsers if aspect-ratio not supported widely enough for target */
-  /* For browsers not supporting aspect-ratio, the padding trick is on game-area-wrapper */
-
-  margin: auto; /* This will center it if it's letterboxed */
-  background-color: #000000; /* Letterbox color - visible if this container is smaller than app-container */
-  /* border: 2px dashed hotpink; /* Debugging */
-  overflow: hidden; /* Ensure children don't spill out */
-}
-
-/* .game-area-wrapper is now less critical if .game-container directly handles aspect ratio */
-/* If using padding-bottom trick, .game-container would be simpler, and .game-area-wrapper would do this: */
-/* .game-area-wrapper { 
-    position: relative; 
-    width: 100%; 
-    padding-bottom: calc(var(--game-aspect-h) / var(--game-aspect-w) * 100%); 
-    height: 0; 
-    overflow: hidden;
-   }
-*/
-
-/* .game-area fills its parent (.game-container or .game-area-wrapper) */
-.game-area {
-  position: absolute; /* If parent is .game-area-wrapper with padding trick */
-  /* If parent is .game-container with aspect-ratio property, position:relative and w/h 100% is enough */
-  /* Let's assume .game-container has aspect-ratio, so .game-area just fills it */
   width: 100%;
   height: 100%;
+  max-width: min(90vh, 800px);
+  aspect-ratio: 4/3;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--mastil-bg-primary);
+  border: 1px solid var(--mastil-border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+@media (min-width: 640px) {
+  .game-container {
+    aspect-ratio: 16/9;
+  }
+}
+
+/* Game area wrapper */
+.game-area-wrapper {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Game area */
+.game-area {
+  position: absolute;
   top: 0;
   left: 0;
-  background-image: url('https://iili.io/3vzNNqJ.png'); /* Updated URL */
-  background-size: cover; 
-  background-position: center center;
+  width: 100%;
+  height: 100%;
+  background-image: url('https://iili.io/3vzNNqJ.png');
+  background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
-  background-color: #101820; /* Fallback */
-  /* border: 1px dashed lime; /* Debugging */
 }
 
 /* Minor adjustments for very small screens */
