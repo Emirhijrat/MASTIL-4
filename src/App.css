@@ -1,69 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Core game variables */
   --game-min-touch: 44px;
-  /* Define aspect ratio for the game area, e.g., 16:9 */
-  --game-aspect-ratio: calc(9 / 16);
+  /* Aspect ratio W:H, e.g., 16:9. So padding-bottom will be (H/W)*100% */
+  /* For your map image, it seems more landscape. Let's assume 16:9 for now. Adjust if needed. */
+  --game-aspect-ratio-padding: calc(9 / 16 * 100%); 
 }
 
-.theme-light {
-  /* Theme colors */
-  --mastil-bg-primary: #F1F5F9;
-  --mastil-bg-secondary: #E2E8F0;
-  --mastil-accent: #4F46E5;
-  --mastil-accent-hover: #6366F1;
-  --mastil-accent-active: #4338CA;
-  
-  /* Player colors - Standard for Light Mode */
-  --mastil-player: #2563EB;
-  --mastil-player-light: #3B82F6;
-  --mastil-player-dark: #1D4ED8;
-  --mastil-enemy: #DC2626;
-  --mastil-enemy-light: #EF4444;
-  --mastil-enemy-dark: #B91C1C;
-  --mastil-neutral: #64748B;
-  --mastil-neutral-light: #94A3B8;
-  --mastil-neutral-dark: #475569;
-  
-  /* UI colors */
-  --mastil-text-primary: #0F172A;
-  --mastil-text-secondary: #334155;
-  --mastil-text-muted: #64748B;
-  --mastil-border: #CBD5E1;
-}
-
-.theme-dark {
-  /* Theme colors */
-  --mastil-bg-primary: #0F172A;
-  --mastil-bg-secondary: #1E293B;
-  --mastil-accent: #6366F1;
-  --mastil-accent-hover: #818CF8;
-  --mastil-accent-active: #4F46E5;
-  
-  /* Player colors - Enhanced for Dark Mode */
-  --mastil-player: #60A5FA;
-  --mastil-player-light: #93C5FD;
-  --mastil-player-dark: #3B82F6;
-  --mastil-enemy: #F87171;
-  --mastil-enemy-light: #FCA5A5;
-  --mastil-enemy-dark: #EF4444;
-  --mastil-neutral: #94A3B8;
-  --mastil-neutral-light: #CBD5E1;
-  --mastil-neutral-dark: #64748B;
-  
-  /* UI colors */
-  --mastil-text-primary: #F8FAFC;
-  --mastil-text-secondary: #CBD5E1;
-  --mastil-text-muted: #64748B;
-  --mastil-border: #334155;
-}
+.theme-light { /* ... existing theme styles ... */ }
+.theme-dark { /* ... existing theme styles ... */ }
+/* Omitting full theme styles for brevity, assuming they are unchanged */
 
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Prevent scrollbars on body/root */
+  overflow: hidden;
 }
 
 body {
@@ -73,45 +25,42 @@ body {
   overscroll-behavior: none;
   user-select: none;
   color: var(--mastil-text-primary);
-  background: var(--mastil-bg-primary); /* Moved from html, body to just body */
-}
-
-/* App container takes full height and centers its content (game-container) */
-.app-container {
-  display: flex;
-  flex-direction: column;
+  background: var(--mastil-bg-primary);
+  display: flex; /* Ensure body itself is a flex container to center app-container */
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
-  padding: 1vmin; /* Small padding around the game area */
+}
+
+.app-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw; /* Take full viewport width */
+  height: 100vh; /* Take full viewport height */
+  padding: 1vmin; 
   box-sizing: border-box;
 }
 
-/* Game container holds the game area wrapper and potentially other UI like top/bottom bars */
+/* Game container will try to fit within the app-container, respecting aspect ratio */
 .game-container {
-  display: flex;
-  flex-direction: column;
-  /* Max width/height to prevent it from becoming too large on desktop */
-  /* On mobile, it will be constrained by viewport anyway */
+  position: relative; /* For the aspect ratio child */
   width: 100%;
-  height: 100%;
-  max-width: 1200px; /* Example max width */
-  max-height: 90vh; /* Example max height relative to viewport */
-  box-sizing: border-box;
-  /* border: 2px solid red; /* For debugging layout */
+  height: auto; /* Height will be determined by width and aspect ratio */
+  max-width: calc(100vh * (16 / 9)); /* Max width based on 16:9 of viewport height */
+  max-height: 100vh; /* Max height is viewport height */
+  /* This ensures it fits landscape-wise, then if viewport is portrait, width is constrained by height */
+  margin: auto; /* Center the game-container if it's letterboxed */
+  /* border: 2px dashed red; /* Debug */
 }
 
 .game-area-wrapper {
   position: relative;
   width: 100%;
-  /* Use padding-bottom to maintain aspect ratio, e.g., 16:9 or 4:3 */
-  /* padding-bottom: calc(100% * var(--game-aspect-ratio)); /* e.g., 100% * (9/16) for 16:9 */
-  /* For a square map, you might use 100%. Let's assume landscape-ish for now */
-  /* A simpler approach: make it take available space and let content scale */
-  flex-grow: 1;
-  /* border: 2px solid blue; /* For debugging layout */
-  overflow: hidden; /* Important if game-area uses absolute positioning and might overflow */
+  padding-bottom: var(--game-aspect-ratio-padding); /* Enforces aspect ratio */
+  height: 0; /* Collapse height, padding-bottom gives it dimension */
+  overflow: hidden;
+  background-color: #000; /* Letterbox color if needed */
+  /* border: 2px dashed blue; /* Debug */
 }
 
 .game-area {
@@ -120,29 +69,39 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('https://iili.io/3voBpEP.png'); /* Updated URL */
+  background-image: url('https://iili.io/3voBpEP.png'); 
   background-size: cover; 
   background-position: center center;
   background-repeat: no-repeat;
+  /* Fallback color in case image fails */
   background-color: #101820; 
-  /* border: 2px solid green; /* For debugging layout */
+  /* border: 2px dashed lime; /* Debug */
 }
 
-
-@media (max-width: 768px) { /* Example breakpoint for tablets and smaller */
-  .game-container {
-    max-height: 100vh; /* Allow more height on mobile */
-    padding: 0; /* Remove padding on smaller screens if app-container handles it */
-  }
+/* Media queries for font sizes and potentially other adjustments */
+@media (max-width: 768px) {
   body {
     font-size: 14px;
   }
-  /* Adjust other UI elements if needed */
 }
 
-@media (max-width: 480px) { /* Example breakpoint for phones */
+@media (max-width: 480px) {
   body {
     font-size: 12px;
   }
-  /* Further adjustments */
+  .app-container {
+    padding: 0; /* Full bleed on very small screens */
+  }
+}
+
+/* Re-paste existing theme styles here if they were omitted above */
+.theme-light {
+  --mastil-bg-primary: #F1F5F9; --mastil-bg-secondary: #E2E8F0; --mastil-accent: #4F46E5; --mastil-accent-hover: #6366F1; --mastil-accent-active: #4338CA;
+  --mastil-player: #2563EB; --mastil-player-light: #3B82F6; --mastil-player-dark: #1D4ED8; --mastil-enemy: #DC2626; --mastil-enemy-light: #EF4444; --mastil-enemy-dark: #B91C1C; --mastil-neutral: #64748B; --mastil-neutral-light: #94A3B8; --mastil-neutral-dark: #475569;
+  --mastil-text-primary: #0F172A; --mastil-text-secondary: #334155; --mastil-text-muted: #64748B; --mastil-border: #CBD5E1;
+}
+.theme-dark {
+  --mastil-bg-primary: #0F172A; --mastil-bg-secondary: #1E293B; --mastil-accent: #6366F1; --mastil-accent-hover: #818CF8; --mastil-accent-active: #4F46E5;
+  --mastil-player: #60A5FA; --mastil-player-light: #93C5FD; --mastil-player-dark: #3B82F6; --mastil-enemy: #F87171; --mastil-enemy-light: #FCA5A5; --mastil-enemy-dark: #EF4444; --mastil-neutral: #94A3B8; --mastil-neutral-light: #CBD5E1; --mastil-neutral-dark: #64748B;
+  --mastil-text-primary: #F8FAFC; --mastil-text-secondary: #CBD5E1; --mastil-text-muted: #64748B; --mastil-border: #334155;
 }

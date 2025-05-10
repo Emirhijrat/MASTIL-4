@@ -22,7 +22,7 @@ function App() {
     gameOverMessage,
     restartGame,
     getUpgradeCost,
-    upgradeBuilding, // Added from useGameState
+    upgradeBuilding, 
     showPlayerInputPopup,
     handlePlayerSetup,
     playerName,
@@ -38,7 +38,7 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsAppLoading(false);
-    }, 500);
+    }, 10000); // Changed to 10 seconds
     return () => clearTimeout(timer);
   }, []);
 
@@ -54,7 +54,6 @@ function App() {
     return <PlayerNameInputPopup onSubmit={handlePlayerSetup} />;
   }
   
-  // console.log('[App.tsx] Rendering GameBoard with buildings:', buildings.map(b => ({id: b.id, owner: b.owner, units: b.units}) ));
   return (
     <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
       <GameBoard
@@ -63,7 +62,7 @@ function App() {
         selectBuilding={selectBuilding}
         deselectBuilding={deselectBuilding}
         getUpgradeCost={getUpgradeCost}
-        upgradeBuilding={upgradeBuilding} // Pass upgradeBuilding to GameBoard
+        upgradeBuilding={upgradeBuilding} 
         showMessage={showMessage}
         playerElement={playerElement}
         aiElement={aiElement}
