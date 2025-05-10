@@ -192,69 +192,116 @@ export function useGameState(config: GameConfig) {
   }, [stopBackgroundMusic]);
 
   useEffect(() => {
-    if (gameOver || showPlayerInputPopup) return;
     const interval = setInterval(() => {
+      if (!gameOver && !showPlayerInputPopup) {
         setBuildings(prevBuildings => {
           let changed = false;
           const newBuildings = prevBuildings.map(building => {
-            if (building.owner !== 'neutral' && building.units < building.maxUnits) {
+            if (building.units < building.maxUnits) {
               changed = true;
-              return { ...building, units: Math.min(building.units + building.level, building.maxUnits) };
+              return {
+                ...building,
+                units: Math.min(building.units + building.level, building.maxUnits)
+              };
             }
             return building;
           });
+          
           return changed ? newBuildings : prevBuildings;
         });
+      }
     }, config.unitGenerationInterval);
+    
     return () => clearInterval(interval);
   }, [config.unitGenerationInterval, gameOver, showPlayerInputPopup]);
 
   useEffect(() => {
-    if (gameOver || showPlayerInputPopup || buildings.length === 0) return;
-    const intervalId = setInterval(() => {
-      const currentBuildingsStateForAI = JSON.parse(JSON.stringify(buildings));
-      const aiAction = makeAIDecision(currentBuildingsStateForAI, showMessage);
-      if (aiAction) {
-        if (aiAction.type === 'attack' && aiAction.source && aiAction.target) {
-          const latestSourceBuilding = buildings.find(b => b.id === aiAction.source.id);
-          const latestTargetBuilding = buildings.find(b => b.id === aiAction.target.id);
-          if (latestSourceBuilding && latestTargetBuilding) {
-            if (typeof sendUnits === 'function') sendUnits(latestSourceBuilding, latestTargetBuilding); 
-            else console.error("[AI useEffect] sendUnits is not a function.");
-          }
-        } else if (aiAction.type === 'upgrade' && aiAction.target) {
-          const latestTargetBuilding = buildings.find(b => b.id === aiAction.target.id);
-          if (latestTargetBuilding) {
-            if (typeof upgradeBuilding === 'function') upgradeBuilding(latestTargetBuilding); 
-            else console.error("[AI useEffect] upgradeBuilding is not a function.");
-          }
-        }
-      }
-    }, config.aiActionInterval);
-    return () => clearInterval(intervalId);
-  }, [config.aiActionInterval, buildings, gameOver, showPlayerInputPopup, showMessage, sendUnits, upgradeBuilding]);
-
-  useEffect(() => {
-    if (gameOver || showPlayerInputPopup) return;
     const interval = setInterval(() => {
+      if (!gameOver && !showPlayerInputPopup) {
         const now = Date.now();
         if (now - lastNeutralUpgrade >= 10000) {
           setBuildings(prevBuildings => {
+            const neutralBuildings = prevBuildings.filter(b => b.owner === 'neutral');
             let upgraded = false;
-            const newBuildings = prevBuildings.map(building => {
-              if (building.owner === 'neutral' && building.units > 20 + (building.level * 5) && Math.random() < 0.3) {
-                upgraded = true;
-                return { ...building, level: building.level + 1, maxUnits: config.maxUnitsPerBuilding + (building.level * 20) };
-              }
-              return building;
-            });
-            if (upgraded) setLastNeutralUpgrade(now);
-            return upgraded ? newBuildings : prevBuildings;
+
+            const buildingToUpgrade = neutralBuildings.find(building => 
+              building.units > 20 + (building.level * 5) &&
+              building.level < config.maxBuildingLevel &&
+              Math.random() < 0.3
+            );
+
+            if (buildingToUpgrade) {
+              console.log(`[Neutral] Building ${buildingToUpgrade.id} upgrading from level ${buildingToUpgrade.level}`);
+              upgraded = true;
+              setLastNeutralUpgrade(now);
+              
+              return prevBuildings.map(building => 
+                building.id === buildingToUpgrade.id
+                  ? {
+                      ...building,
+                      level: building.level + 1,
+                      maxUnits: config.maxUnitsPerBuilding + (building.level * 20),
+                      units: building.units - (20 + (building.level * 5))
+                    }
+                  : building
+              );
+            }
+            return prevBuildings;
           });
         }
+      }
     }, 5000);
+
     return () => clearInterval(interval);
-  }, [config.maxUnitsPerBuilding, gameOver, lastNeutralUpgrade, showPlayerInputPopup]);
+  }, [config.maxUnitsPerBuilding, config.maxBuildingLevel, gameOver, lastNeutralUpgrade, showPlayerInputPopup]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!gameOver && !showPlayerInputPopup) {
+        setBuildings(prevBuildings => {
+          const neutralBuildings = prevBuildings.filter(b => b.owner === 'neutral');
+          if (neutralBuildings.length < 2) return prevBuildings;
+
+          const needyBuildings = neutralBuildings.filter(b => 
+            b.units < b.maxUnits * 0.8
+          ).sort((a, b) => (a.units / a.maxUnits) - (b.units / b.maxUnits));
+
+          if (needyBuildings.length === 0) return prevBuildings;
+
+          const supportBuildings = neutralBuildings.filter(b => 
+            b.units > 5 &&
+            b.units > b.maxUnits * 0.8
+          );
+
+          if (supportBuildings.length === 0) return prevBuildings;
+
+          const targetBuilding = needyBuildings[0];
+          const sourceBuilding = supportBuildings[Math.floor(Math.random() * supportBuildings.length)];
+
+          const surplusUnits = sourceBuilding.units - 5;
+          const unitsToSend = Math.floor(surplusUnits * 0.75);
+
+          if (unitsToSend > 0) {
+            console.log(`[Neutral] Sending ${unitsToSend} units from ${sourceBuilding.id} to ${targetBuilding.id}`);
+            
+            startUnitAnimation(sourceBuilding, targetBuilding, unitsToSend, 'neutral', (units) => {
+              handleUnitsArrival(targetBuilding.id, units, 'neutral');
+            });
+
+            return prevBuildings.map(building =>
+              building.id === sourceBuilding.id
+                ? { ...building, units: building.units - unitsToSend }
+                : building
+            );
+          }
+
+          return prevBuildings;
+        });
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [gameOver, showPlayerInputPopup, startUnitAnimation]);
 
   useEffect(() => {
     if (!showPlayerInputPopup && buildings.length > 0 && !gameOver) { 
