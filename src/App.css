@@ -82,7 +82,7 @@ body {
 
 /* Game area background - this is the main map background */
 .game-area {
-  background-image: url('https://iili.io/3kL4PiQ.png');
+  background-image: url('https://iili.io/3vCACrB.png'); /* Updated URL */
   background-size: cover; 
   background-position: center center;
   background-repeat: no-repeat;
@@ -90,7 +90,6 @@ body {
   background-color: #101820; 
 }
 
-/* Removed .game-board specific background style as .game-area is now targeted */
 
 @media (max-width: 640px) {
   body {

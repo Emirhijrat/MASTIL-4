@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Building, OwnerType, GameConfig, ElementType, ELEMENTS } from '../types/gameTypes';
 import { useUnitAnimationDispatch } from './useUnitAnimations';
 import { useAudio } from './useAudio';
-import { initialBuildingData } from '../utils/initialData';
+import { initialBuildingData } from '../utils/initialData'; // Imported here
 import { makeAIDecision, handleAIEvent } from '../ai/enemyAI';
 
 export function useGameState(config: GameConfig) {
@@ -31,7 +31,7 @@ export function useGameState(config: GameConfig) {
     if (buildings.length > 0) {
         // console.log('[useGameState DEBUG] First building details:', JSON.stringify(buildings[0]));
     } else {
-        console.log('[useGameState DEBUG] Buildings array is empty after update.');
+        // console.log('[useGameState DEBUG] Buildings array is empty after update.');
     }
   }, [buildings]);
 
@@ -111,24 +111,27 @@ export function useGameState(config: GameConfig) {
     let assignedAiElement: ElementType;
     do { assignedAiElement = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)]; } while (assignedAiElement === element);
     setAiElement(assignedAiElement);
-    console.log('[useGameState handlePlayerSetup] Processing initialBuildingData.map(...)');
+
+    // Log the raw initialBuildingData that this function is about to use
+    console.log('[useGameState handlePlayerSetup] Raw initialBuildingData being used:', JSON.stringify(initialBuildingData.map(b => b[0]))); // Log only IDs for brevity
+
     const newBuildings = initialBuildingData.map((data, index) => {
       const buildingId = data[0] as string;
       const owner = data[1] as OwnerType;
       const initialUnits = data[2] as number;
       const level = data[3] as number;
       const position = data[4] as { x: number; y: number };
-      // Note: isInvulnerable (data[5]) is not explicitly used here anymore, but was in original initialData.ts
-      // If it's still needed, it should be handled. For now, focusing on element assignment.
       const buildingElement = owner === 'player' ? element : (owner === 'enemy' ? assignedAiElement : undefined);
-      console.log(`[useGameState handlePlayerSetup] Mapping item ${index}: id=${buildingId}, owner=${owner}, units=${initialUnits}, level=${level}, pos=(${position.x},${position.y}), element=${buildingElement}`);
+      
+      // Log each building ID being created
+      console.log(`[useGameState handlePlayerSetup] Creating building from map: id=${buildingId}`);
+      
       return {
         id: buildingId, owner, units: initialUnits, 
         maxUnits: config.maxUnitsPerBuilding, level, position, element: buildingElement,
       };
     });
     console.log("[useGameState] handlePlayerSetup - newBuildings to be set (summary):", newBuildings.map(b => ({id: b.id, owner: b.owner, units: b.units, element: b.element?.charAt(0) })));
-    console.log("[useGameState] handlePlayerSetup - newBuildings FULL:", JSON.stringify(newBuildings));
     setBuildings(newBuildings);
     setSelectedBuildingId(null); setGameOver(false); setGameOverMessage('');
     console.log("[useGameState] handlePlayerSetup IS EXPLICITLY SETTING showPlayerInputPopup to false");
@@ -136,7 +139,7 @@ export function useGameState(config: GameConfig) {
     showMessage(`Majestät ${name}, Eure ${element} Truppen erwarten Eure Befehle! Der Feind kontrolliert die Macht des ${assignedAiElement}.`);
     if (typeof playBackgroundMusic === 'function') playBackgroundMusic();
 
-  }, [config.maxUnitsPerBuilding, showMessage, playBackgroundMusic]); // Removed initialBuildingData from deps as it's a constant import
+  }, [config.maxUnitsPerBuilding, showMessage, playBackgroundMusic]);
 
   const selectBuilding = useCallback((buildingId: string) => {
     if (showPlayerInputPopup) return;
