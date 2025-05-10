@@ -1,21 +1,31 @@
 import React from 'react';
 import { useUnitAnimations } from '../hooks/useUnitAnimations';
-import TravelingDots from './TravelingDots'; // Import the new component
+import AttackArrow from './AttackArrow'; // Import the new AttackArrow component
+// import TravelingDots from './TravelingDots'; // No longer needed
 
-interface UnitAnimationProps {
-  // containerRef: React.RefObject<HTMLDivElement>; // Removed as it's not used
-}
-
-const UnitAnimation: React.FC<UnitAnimationProps> = ({ /* containerRef */ }) => {
-  const { unitAnimations } = useUnitAnimations();
+const UnitAnimation: React.FC = () => {
+  // useUnitAnimations now returns activeArrows instead of unitAnimations
+  const { activeArrows } = useUnitAnimations(); 
   
-  console.log('[UnitAnimation.tsx] Current unitAnimations state:', unitAnimations);
+  // console.log('[UnitAnimation.tsx] Active arrows:', activeArrows); // Optional: for debugging
+
+  if (!activeArrows || activeArrows.length === 0) {
+    return null; // No active arrows to render
+  }
 
   return (
     <>
-      {/* Render TravelingDots for each animation */} 
-      {unitAnimations.map((animation) => (
-        <TravelingDots key={animation.id} animation={animation} />
+      {/* Render AttackArrow for each active arrow animation */}
+      {activeArrows.map((arrow) => (
+        <AttackArrow
+          key={arrow.id}
+          id={arrow.id} // Pass the unique id for the marker
+          sourceX={arrow.x} // x from ArrowAnimationData is the sourceX
+          sourceY={arrow.y} // y from ArrowAnimationData is the sourceY
+          targetX={arrow.targetX}
+          targetY={arrow.targetY}
+          owner={arrow.owner}
+        />
       ))}
     </>
   );

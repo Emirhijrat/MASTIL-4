@@ -14,23 +14,33 @@ const defaultSettings: AudioSettings = {
   masterVolume: 0.5, // Default volume lowered a bit
 };
 
-// Create audio elements
 let backgroundMusic: HTMLAudioElement | null = null;
 let attackSound: HTMLAudioElement | null = null;
 
-// Initialize audio elements only in the browser environment
 if (typeof window !== 'undefined') {
-  backgroundMusic = new Audio('/audio/background_music.mp3'); // Ensure this path is correct
-  backgroundMusic.loop = true;
-
-  attackSound = new Audio('/audio/attack_sfx.wav'); // Ensure this path is correct
+  try {
+    backgroundMusic = new Audio('/audio/background_music.mp3'); 
+    backgroundMusic.loop = true;
+  } catch (e) {
+    console.error("Error creating backgroundMusic Audio object:", e);
+  }
+  try {
+    attackSound = new Audio('/audio/attack_sfx.wav'); 
+  } catch (e) {
+    console.error("Error creating attackSound Audio object:", e);
+  }
 }
 
 export function useAudio() {
   const [settings, setSettings] = useState<AudioSettings>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : defaultSettings;
+      try {
+        return saved ? JSON.parse(saved) : defaultSettings;
+      } catch (e) {
+        console.error("Error parsing audio settings from localStorage:", e);
+        return defaultSettings;
+      }
     }
     return defaultSettings;
   });
@@ -53,10 +63,10 @@ export function useAudio() {
   const playBackgroundMusic = useCallback(() => {
     if (backgroundMusic && settings.musicEnabled) {
       backgroundMusic.play().catch(error => {
-        console.warn('Failed to play background music initially or on demand:', error);
+        console.warn('Failed to play background music. Name:', error.name, 'Message:', error.message, error);
       });
     }
-  }, [settings.musicEnabled]); // Dependency on settings.musicEnabled
+  }, [settings.musicEnabled, settings.masterVolume]); // Added masterVolume as play might be affected by it indirectly
 
   const stopBackgroundMusic = useCallback(() => {
     if (backgroundMusic) {
@@ -64,7 +74,6 @@ export function useAudio() {
     }
   }, []);
 
-  // Effect to handle auto-play/pause based on settings.musicEnabled toggle
   useEffect(() => {
     if (settings.musicEnabled) {
       playBackgroundMusic();
@@ -76,11 +85,15 @@ export function useAudio() {
   const playAttackSound = useCallback(() => {
     if (attackSound && settings.sfxEnabled) {
       attackSound.currentTime = 0;
+      // Check if audio context is suspended (common issue with autoplay policies)
+      if (attackSound.paused && attackSound.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+         // Attempt to resume audio context if necessary, though this is more for background music usually
+      }
       attackSound.play().catch(error => {
-        console.warn('Failed to play attack sound:', error);
+        console.warn('Failed to play attack sound. Name:', error.name, 'Message:', error.message, 'Full error:', error);
       });
     }
-  }, [settings.sfxEnabled]);
+  }, [settings.sfxEnabled, settings.masterVolume]); // Added masterVolume as play might be affected by it indirectly
 
   const toggleMusic = useCallback(() => {
     setSettings(prev => ({ ...prev, musicEnabled: !prev.musicEnabled }));
@@ -91,7 +104,7 @@ export function useAudio() {
   }, []);
 
   const setMasterVolume = useCallback((volume: number) => {
-    const clampedVolume = Math.max(0, Math.min(1, volume)); // Ensure volume is between 0 and 1
+    const clampedVolume = Math.max(0, Math.min(1, volume));
     setSettings(prev => ({ ...prev, masterVolume: clampedVolume }));
   }, []);
 
@@ -101,7 +114,7 @@ export function useAudio() {
     toggleSfx,
     setMasterVolume,
     playAttackSound,
-    playBackgroundMusic, // Added
-    stopBackgroundMusic, // Added
+    playBackgroundMusic,
+    stopBackgroundMusic,
   };
 }

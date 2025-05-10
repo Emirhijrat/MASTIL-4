@@ -3,26 +3,34 @@ import { Building, OwnerType, UnitAnimationData } from '../types/gameTypes';
 import { createContext, useContext } from 'react';
 import { getBuildingCenter } from '../utils/getElementCenter';
 
-// Updated OnCompleteCallback type
 type OnCompleteCallback = (targetId: string, units: number, owner: OwnerType) => void;
 
+// UnitAnimationData might not need progressX/Y for arrows, but duration is key for arrow visibility time.
+// If distance is also not used by AttackArrow, it could be removed too.
+// For now, we keep them but don't update progressX/Y for visual movement.
+interface ArrowAnimationData extends Omit<UnitAnimationData, 'progressX' | 'progressY'> {
+  // x, y are source coordinates for the arrow
+  // targetX, targetY are target coordinates for the arrow
+  // duration is how long the arrow is shown
+}
+
 const UnitAnimationContext = createContext<{
-  unitAnimations: UnitAnimationData[];
-  startUnitAnimation: (
+  // Store ArrowAnimationData for active arrows
+  activeArrows: ArrowAnimationData[]; 
+  startUnitAttack: (
     source: Building,
     target: Building,
     units: number,
     owner: OwnerType,
-    onComplete: OnCompleteCallback // Use updated type
+    onComplete: OnCompleteCallback 
   ) => void;
 }>({
-  unitAnimations: [],
-  startUnitAnimation: () => {},
+  activeArrows: [],
+  startUnitAttack: () => {},
 });
 
 export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [unitAnimations, setUnitAnimations] = useState<UnitAnimationData[]>([]);
-  // Updated ref type for animationCallbacks
+  const [activeArrows, setActiveArrows] = useState<ArrowAnimationData[]>([]);
   const animationCallbacks = useRef<Map<string, OnCompleteCallback>>(new Map());
   const animationFrameId = useRef<number | null>(null);
   const containerDimensions = useRef({ width: 0, height: 0 });
@@ -34,17 +42,8 @@ export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!isMounted.current) return;
       const container = document.querySelector('.game-area');
       if (container) {
-        const newWidth = container.clientWidth;
-        const newHeight = container.clientHeight;
-        if (newWidth > 0 && newHeight > 0) {
-            containerDimensions.current = { width: newWidth, height: newHeight };
-            // console.log('[useUnitAnimations] Container dimensions updated:', containerDimensions.current);
-        } else if (containerDimensions.current.width === 0 || containerDimensions.current.height === 0){
-            // console.warn('[useUnitAnimations] Game area container found, but dimensions are zero. Retrying soon.');
-        }
-      } else {
-        // console.warn('[useUnitAnimations] Game area container .game-area not found. Retrying soon.');
-      }
+        containerDimensions.current = { width: container.clientWidth, height: container.clientHeight };
+      } 
     };
     const initialCheckTimeout = setTimeout(updateDimensions, 100);
     window.addEventListener('resize', updateDimensions);
@@ -52,106 +51,88 @@ export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
       isMounted.current = false;
       clearTimeout(initialCheckTimeout);
       window.removeEventListener('resize', updateDimensions);
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
+      if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
     };
   }, []);
 
+  // This useEffect now only manages the DURATION of the arrow display
   useEffect(() => {
-    let lastLogTime = 0;
-    const logInterval = 1000; // Log progress less frequently
-    let loggedAnimationId: string | null = null;
-
-    const updateAnimations = () => {
+    const updateArrowVisibility = () => {
       if (!isMounted.current) return;
       const now = performance.now();
-      setUnitAnimations(prevAnimations => {
-        if (prevAnimations.length === 0) {
-          if (isMounted.current) animationFrameId.current = requestAnimationFrame(updateAnimations);
-          return prevAnimations;
+      setActiveArrows(prevArrows => {
+        if (prevArrows.length === 0) {
+          if (isMounted.current) animationFrameId.current = requestAnimationFrame(updateArrowVisibility);
+          return prevArrows;
         }
-        const updatedAnimations = prevAnimations.map(anim => {
-          if (!anim) return null;
-          const elapsed = now - anim.startTime;
-          const progress = Math.min(elapsed / anim.duration, 1);
-          const progressX = progress * (anim.targetX - anim.x);
-          const progressY = progress * (anim.targetY - anim.y);
-          if (prevAnimations.length > 0 && (loggedAnimationId === null || loggedAnimationId === anim.id)) {
-            if (loggedAnimationId === null) loggedAnimationId = anim.id;
-            if (now - lastLogTime > logInterval && anim.id === loggedAnimationId) {
-              // console.log(`[Anim ID: ${anim.id}] Prog: ${progress.toFixed(3)}, Pos:(${(anim.x + progressX).toFixed(0)},${(anim.y + progressY).toFixed(0)})`);
-              lastLogTime = now;
-            }
-          }
-          return { ...anim, progress, progressX, progressY };
-        }).filter(anim => anim !== null) as UnitAnimationData[];
 
-        const completed = updatedAnimations.filter(anim => anim.progress >= 1);
-        const remaining = updatedAnimations.filter(anim => anim.progress < 1);
+        const updatedArrows = prevArrows.map(arrow => ({
+          ...arrow,
+          progress: Math.min((now - arrow.startTime) / arrow.duration, 1),
+        }));
 
-        completed.forEach(anim => {
-          if (!anim) return;
-          // console.log(`[useUnitAnimations] Animation ${anim.id} COMPLETED. Units: ${anim.units}`);
-          if (anim.id === loggedAnimationId) loggedAnimationId = null;
-          const callback = animationCallbacks.current.get(anim.id);
+        const completed = updatedArrows.filter(arrow => arrow.progress >= 1);
+        const remaining = updatedArrows.filter(arrow => arrow.progress < 1);
+
+        completed.forEach(arrow => {
+          const callback = animationCallbacks.current.get(arrow.id);
           if (callback) {
-            // Pass targetId, units, and owner to the callback
-            callback(anim.targetId, anim.units, anim.owner);
-            animationCallbacks.current.delete(anim.id);
-          } else console.warn(`[Animation ${anim.id}] No callback found.`);
+            console.log(`[useUnitAnimations] Arrow ${arrow.id} display time ended. Calling onComplete.`);
+            callback(arrow.targetId, arrow.units, arrow.owner);
+            animationCallbacks.current.delete(arrow.id);
+          }
         });
-
-        if (remaining.length === 0 && prevAnimations.length > 0 && completed.length > 0) loggedAnimationId = null;
-        if (isMounted.current) animationFrameId.current = requestAnimationFrame(updateAnimations);
+        if (isMounted.current) animationFrameId.current = requestAnimationFrame(updateArrowVisibility);
         return remaining;
       });
     };
-    if (isMounted.current) animationFrameId.current = requestAnimationFrame(updateAnimations);
+    if (isMounted.current) animationFrameId.current = requestAnimationFrame(updateArrowVisibility);
+    // Cleanup is handled in the mounting useEffect
   }, []);
 
-  const startUnitAnimation = useCallback((
+  const startUnitAttack = useCallback((
     source: Building,
     target: Building,
     units: number,
     owner: OwnerType,
-    onComplete: OnCompleteCallback // Use updated type
+    onComplete: OnCompleteCallback
   ) => {
-    // console.log(`[useUnitAnimations startUnitAnimation] === Request: ${source.id} -> ${target.id}, Units: ${units}, Owner: ${owner}`);
+    console.log(`[useUnitAnimations] startUnitAttack: ${source.id} -> ${target.id}, Units: ${units}`);
     const { width: currentContainerWidth, height: currentContainerHeight } = containerDimensions.current;
     if (currentContainerWidth === 0 || currentContainerHeight === 0) {
-      console.error(`[useUnitAnimations startUnitAnimation] CRITICAL: Game area W:${currentContainerWidth}, H:${currentContainerHeight}. Cannot start.`);
+      console.error("[useUnitAnimations] CRITICAL: Game area dimensions zero. Cannot place arrow.");
+      // Call onComplete immediately as the attack "resolves" instantly if no visual can be shown
+      onComplete(target.id, units, owner);
       return;
     }
     const sourceCenter = getBuildingCenter(source, currentContainerWidth, currentContainerHeight);
     const targetCenter = getBuildingCenter(target, currentContainerWidth, currentContainerHeight);
     if (!sourceCenter || !targetCenter) {
-      console.error("[useUnitAnimations startUnitAnimation] CRITICAL: Failed to get center for source/target.");
+      console.error("[useUnitAnimations] CRITICAL: Failed to get center for source/target for arrow.");
+      onComplete(target.id, units, owner);
       return;
     }
-    const deltaX = targetCenter.x - sourceCenter.x;
-    const deltaY = targetCenter.y - sourceCenter.y;
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    const minDuration = 2000;
-    const maxDuration = 5000;
-    const maxPossibleDist = Math.sqrt(currentContainerWidth**2 + currentContainerHeight**2);
-    const distScale = maxPossibleDist > 0 ? Math.min(distance / maxPossibleDist, 1) : 0.5;
-    const duration = minDuration + distScale * (maxDuration - minDuration);
-    const animId = `anim_${performance.now().toFixed(0)}_${Math.random().toString(16).slice(2, 8)}`;
+
+    const arrowDisplayDuration = 1500; // Arrow visible for 1.5 seconds
+    const animId = `arrow_${performance.now().toFixed(0)}_${Math.random().toString(16).slice(2, 8)}`;
     animationCallbacks.current.set(animId, onComplete);
-    setUnitAnimations(prev => {
-      const newAnimationData: UnitAnimationData = {
+
+    setActiveArrows(prev => {
+      const newArrowData: ArrowAnimationData = {
         id: animId, sourceId: source.id, targetId: target.id, units, owner,
         x: sourceCenter.x, y: sourceCenter.y, targetX: targetCenter.x, targetY: targetCenter.y,
-        progressX: 0, progressY: 0, progress: 0, distance, startTime: performance.now(), duration,
+        progress: 0, // Progress now just tracks visibility duration
+        distance: 0, // Distance might not be needed for static arrows
+        startTime: performance.now(), 
+        duration: arrowDisplayDuration, 
       };
-      // console.log('[useUnitAnimations startUnitAnimation] Adding new animation data:', JSON.parse(JSON.stringify(newAnimationData)));
-      return [...prev, newAnimationData];
+      console.log('[useUnitAnimations] Adding new arrow data:', newArrowData);
+      return [...prev, newArrowData];
     });
-  }, []);
+  }, []); 
 
   return (
-    <UnitAnimationContext.Provider value={{ unitAnimations, startUnitAnimation }}>
+    <UnitAnimationContext.Provider value={{ activeArrows, startUnitAttack }}>
       {children}
     </UnitAnimationContext.Provider>
   );
@@ -160,11 +141,11 @@ export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useUnitAnimations = () => {
   const context = useContext(UnitAnimationContext);
   if (!context) throw new Error('useUnitAnimations must be used within a UnitAnimationProvider');
-  return { unitAnimations: context.unitAnimations };
+  return { activeArrows: context.activeArrows }; // Expose activeArrows
 };
 
 export const useUnitAnimationDispatch = () => {
   const context = useContext(UnitAnimationContext);
   if (!context) throw new Error('useUnitAnimationDispatch must be used within a UnitAnimationProvider');
-  return { startUnitAnimation: context.startUnitAnimation };
+  return { startUnitAnimation: context.startUnitAttack }; // Rename exported function for clarity
 };

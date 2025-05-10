@@ -14,7 +14,7 @@ export interface Building {
     y: number; // 0-1 percentage of game area height
   };
   isInvulnerable?: boolean; 
-  element?: ElementType; // Added optional element property
+  element?: ElementType; 
 }
 
 export interface UnitAnimationData {
@@ -27,9 +27,9 @@ export interface UnitAnimationData {
   y: number;
   targetX: number;
   targetY: number;
-  progressX: number;
-  progressY: number;
-  progress: number;
+  progressX: number; // Kept for potential future use, not for arrow visuals
+  progressY: number; // Kept for potential future use, not for arrow visuals
+  progress: number;  // For arrow, this tracks display timer; for dots, visual progress
   distance: number;
   startTime: number;
   duration: number; 
@@ -41,6 +41,7 @@ export interface GameConfig {
   upgradeCostFactor: number;
   baseUpgradeCost: number;
   aiActionInterval: number;
-  unitSpeed: number;
+  unitSpeed: number; // Used by useUnitAnimations for dot speed, can be repurposed or removed if dots are gone
   buildingSizePercentage: number;
+  maxBuildingLevel: number; // Made non-optional
 }

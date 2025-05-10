@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'; // Removed 'React' import
+import { useEffect, useState } from 'react';
 import GameBoard from './components/GameBoard';
 import LoadingScreen from './components/LoadingScreen';
 import PlayerNameInputPopup from './components/PlayerNameInputPopup';
@@ -11,20 +11,18 @@ function App() {
   const { theme } = useTheme();
   const [isAppLoading, setIsAppLoading] = useState(true);
 
-  // Centralized game state
   const {
     buildings,
     selectedBuildingId,
     selectBuilding,
     deselectBuilding,
-    message, // message is used for the message display div at the bottom
+    message,
     showMessage,
     gameOver,
     gameOverMessage,
     restartGame,
     getUpgradeCost,
-    // playerBuildingCount, // Removed as it's not used in App.tsx
-    // enemyBuildingCount,  // Removed as it's not used in App.tsx
+    upgradeBuilding, // Added from useGameState
     showPlayerInputPopup,
     handlePlayerSetup,
     playerName,
@@ -40,12 +38,12 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsAppLoading(false);
-    }, 500); // Shorter loading for dev
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    console.log(`[App.tsx] Top-level state: isAppLoading=${isAppLoading}, showPlayerInputPopup=${showPlayerInputPopup}, buildingsCount=${buildings.length}`);
+    // console.log(`[App.tsx] Top-level state: isAppLoading=${isAppLoading}, showPlayerInputPopup=${showPlayerInputPopup}, buildingsCount=${buildings.length}`);
   }, [isAppLoading, showPlayerInputPopup, buildings]);
 
   if (isAppLoading) {
@@ -53,11 +51,10 @@ function App() {
   }
 
   if (showPlayerInputPopup) {
-    console.log('[App.tsx] Rendering PlayerNameInputPopup.');
     return <PlayerNameInputPopup onSubmit={handlePlayerSetup} />;
   }
   
-  console.log('[App.tsx] Rendering GameBoard with buildings:', buildings.map(b => ({id: b.id, owner: b.owner, units: b.units}) ));
+  // console.log('[App.tsx] Rendering GameBoard with buildings:', buildings.map(b => ({id: b.id, owner: b.owner, units: b.units}) ));
   return (
     <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
       <GameBoard
@@ -66,6 +63,7 @@ function App() {
         selectBuilding={selectBuilding}
         deselectBuilding={deselectBuilding}
         getUpgradeCost={getUpgradeCost}
+        upgradeBuilding={upgradeBuilding} // Pass upgradeBuilding to GameBoard
         showMessage={showMessage}
         playerElement={playerElement}
         aiElement={aiElement}
