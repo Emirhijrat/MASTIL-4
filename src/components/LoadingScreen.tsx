@@ -5,7 +5,7 @@ interface LoadingScreenProps {
 }
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = "wird gestartet..." }) => {
-  const version = "Version 1.0"; // Define the version string
+  const version = "Version 1.0.1"; // Updated version number
 
   return (
     <div 
