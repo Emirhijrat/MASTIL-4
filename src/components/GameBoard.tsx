@@ -3,37 +3,32 @@ import { useGameState } from '../hooks/useGameState';
 import StatusBar from './StatusBar';
 import Map from './Map';
 import MessageBox from './MessageBox';
-import { GameConfig } from '../utils/gameConfig';
+import { gameConfig } from '../utils/gameConfig';
 import EndScreen from './EndScreen';
 import SettingsPanel from './SettingsPanel';
 
 const GameBoard: React.FC = () => {
-  // Move useState hook to top
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
-  
-  // Keep useEffect hook consistent
+
   useEffect(() => {
     console.log('[GameBoard.tsx] Component mounted.');
     return () => console.log('[GameBoard.tsx] Component unmounted.');
   }, []);
 
-  // Call useGameState after all local hooks
   const {
     buildings,
     selectedBuildingId,
     selectBuilding,
-    deselectBuilding,
-    sendUnits,
     upgradeBuilding,
     message,
-    showMessage,
     gameOver,
     gameOverMessage,
     restartGame,
     getUpgradeCost,
     playerBuildingCount,
-    enemyBuildingCount
-  } = useGameState(GameConfig);
+    enemyBuildingCount,
+    isPlaytimeThresholdMet,
+  } = useGameState(gameConfig);
 
   return (
     <div className="w-full h-full max-w-[min(90vh,800px)] aspect-[4/3] sm:aspect-[16/9] 
@@ -44,7 +39,7 @@ const GameBoard: React.FC = () => {
         enemyBuildingCount={enemyBuildingCount}
         onOpenSettings={() => setIsSettingsPanelOpen(true)}
       />
-      
+
       <div className="flex-grow relative">
         <Map 
           buildings={buildings}
@@ -53,10 +48,10 @@ const GameBoard: React.FC = () => {
           getUpgradeCost={getUpgradeCost}
           onUpgrade={upgradeBuilding}
         />
-        
+
         {gameOver && <EndScreen message={gameOverMessage} onRestart={restartGame} />}
       </div>
-      
+
       <MessageBox message={message} />
 
       {isSettingsPanelOpen && (

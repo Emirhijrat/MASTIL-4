@@ -1,8 +1,8 @@
-// Format: [id, owner, initialUnits, level, {x, y}]
+// Format: [id, owner, initialUnits, level, {x, y}, isInvulnerable?]
 export const initialBuildingData = [
   // Player and Enemy bases - positioned at opposite sides
   ['b1', 'player', 20, 1, { x: 0.10, y: 0.5 }], // Player base (far left)
-  ['b2', 'enemy', 20, 1, { x: 0.90, y: 0.5 }],  // Enemy base (far right)
+  ['b2', 'enemy', 20, 1, { x: 0.90, y: 0.5 }, true],  // Enemy base (far right) - Initially invulnerable
   
   // Original neutral buildings - well-spaced corners
   ['b3', 'neutral', 10, 1, { x: 0.20, y: 0.20 }], // Top left
@@ -24,3 +24,18 @@ export const initialBuildingData = [
   ['h3', 'neutral', 50, 1, { x: 0.50, y: 0.20 }], // Top mid
   ['h4', 'neutral', 50, 1, { x: 0.50, y: 0.80 }], // Bottom mid
 ];
+
+// Map the initial data to the Building interface structure
+export const mapInitialDataToBuildings = (data: (string | OwnerType | number | { x: number; y: number } | boolean)[][]) => {
+  return data.map(item => ({
+    id: item[0] as string,
+    owner: item[1] as OwnerType,
+    units: item[2] as number,
+    maxUnits: 100, // Assuming a base max units, might need adjustment
+    level: item[3] as number,
+    position: item[4] as { x: number; y: number },
+    isInvulnerable: item[5] as boolean | undefined, // Read the invulnerable flag if it exists
+  }));
+};
+
+export const initialBuildings = mapInitialDataToBuildings(initialBuildingData);

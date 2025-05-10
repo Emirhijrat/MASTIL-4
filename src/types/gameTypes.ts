@@ -10,6 +10,7 @@ export interface Building {
     x: number; // 0-1 percentage of game area width
     y: number; // 0-1 percentage of game area height
   };
+  isInvulnerable?: boolean; // Added invulnerability flag
 }
 
 export interface UnitAnimationData {
@@ -27,6 +28,7 @@ export interface UnitAnimationData {
   progress: number;
   distance: number;
   startTime: number;
+  duration: number; // Added duration for animation
 }
 
 export interface GameConfig {

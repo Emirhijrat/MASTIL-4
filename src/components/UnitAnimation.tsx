@@ -1,24 +1,21 @@
 import React from 'react';
 import { useUnitAnimations } from '../hooks/useUnitAnimations';
-import UnitMove from './UnitMove';
+import TravelingDots from './TravelingDots'; // Import the new component
 
 interface UnitAnimationProps {
-  containerRef: React.RefObject<HTMLDivElement>;
+  // containerRef: React.RefObject<HTMLDivElement>; // Removed as it's not used
 }
 
-const UnitAnimation: React.FC<UnitAnimationProps> = ({ containerRef }) => {
+const UnitAnimation: React.FC<UnitAnimationProps> = ({ /* containerRef */ }) => {
   const { unitAnimations } = useUnitAnimations();
   
+  console.log('[UnitAnimation.tsx] Current unitAnimations state:', unitAnimations);
+
   return (
     <>
+      {/* Render TravelingDots for each animation */} 
       {unitAnimations.map((animation) => (
-        <UnitMove
-          key={animation.id}
-          from={{ x: animation.x, y: animation.y }}
-          to={{ x: animation.targetX, y: animation.targetY }}
-          count={animation.units}
-          owner={animation.owner}
-        />
+        <TravelingDots key={animation.id} animation={animation} />
       ))}
     </>
   );
