@@ -2,14 +2,16 @@
 
 :root {
   --game-min-touch: 44px;
-  /* Aspect ratio W:H, e.g., 16:9. So padding-bottom will be (H/W)*100% */
-  /* For your map image, it seems more landscape. Let's assume 16:9 for now. Adjust if needed. */
-  --game-aspect-ratio-padding: calc(9 / 16 * 100%); 
+  /* Define aspect ratio as W / H for the CSS aspect-ratio property */
+  /* Assuming your map image is roughly 16:9 landscape. Adjust if not. */
+  /* For example, if your map image is 1920x1080, aspect ratio is 16/9 */
+  --game-aspect-w: 16;
+  --game-aspect-h: 9;
 }
 
-.theme-light { /* ... existing theme styles ... */ }
-.theme-dark { /* ... existing theme styles ... */ }
-/* Omitting full theme styles for brevity, assuming they are unchanged */
+/* Theme styles (condensed for brevity - assume they are correct and complete) */
+.theme-light { /* ... */ }
+.theme-dark { /* ... */ }
 
 html, body, #root {
   height: 100%;
@@ -25,76 +27,90 @@ body {
   overscroll-behavior: none;
   user-select: none;
   color: var(--mastil-text-primary);
-  background: var(--mastil-bg-primary);
-  display: flex; /* Ensure body itself is a flex container to center app-container */
+  background-color: #000; /* Black background for letterboxing, visible if app-container doesn't fill */
+  display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* .app-container fills the viewport and centers the .game-container */
 .app-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100vw; /* Take full viewport width */
-  height: 100vh; /* Take full viewport height */
-  padding: 1vmin; 
+  width: 100vw;
+  height: 100vh;
+  padding: 0; /* No padding, let the game-container manage its own space/letterboxing */
   box-sizing: border-box;
+  background-color: var(--mastil-bg-primary); /* The actual page background */
 }
 
-/* Game container will try to fit within the app-container, respecting aspect ratio */
+/* .game-container is the element that will have the fixed aspect ratio and be centered */
 .game-container {
-  position: relative; /* For the aspect ratio child */
-  width: 100%;
-  height: auto; /* Height will be determined by width and aspect ratio */
-  max-width: calc(100vh * (16 / 9)); /* Max width based on 16:9 of viewport height */
-  max-height: 100vh; /* Max height is viewport height */
-  /* This ensures it fits landscape-wise, then if viewport is portrait, width is constrained by height */
-  margin: auto; /* Center the game-container if it's letterboxed */
-  /* border: 2px dashed red; /* Debug */
+  position: relative; /* Needed for .game-area to be absolute inside */
+  /* Determine if width or height should be the constraint */
+  /* Max width is 100vw, max height is 100vh */
+  /* If (viewport_width / viewport_height) > (aspect_w / aspect_h), then height is the constraint */
+  /* Else, width is the constraint */
+  
+  /* Using CSS aspect-ratio property for modern approach */
+  aspect-ratio: var(--game-aspect-w) / var(--game-aspect-h);
+  
+  /* Fit within the viewport */
+  /* Constrain by height first if viewport is wider than game aspect ratio */
+  max-height: 100vh;
+  max-width: calc(100vh * (var(--game-aspect-w) / var(--game-aspect-h)));
+  
+  /* If viewport is taller/narrower than game aspect ratio, constrain by width */
+  @media (orientation: portrait) { /* More specific for portrait scenarios */
+    max-width: 100vw;
+    max-height: calc(100vw * (var(--game-aspect-h) / var(--game-aspect-w)));
+  }
+   /* Fallback or alternative logic for older browsers if aspect-ratio not supported widely enough for target */
+  /* For browsers not supporting aspect-ratio, the padding trick is on game-area-wrapper */
+
+  margin: auto; /* This will center it if it's letterboxed */
+  background-color: #000000; /* Letterbox color - visible if this container is smaller than app-container */
+  /* border: 2px dashed hotpink; /* Debugging */
+  overflow: hidden; /* Ensure children don't spill out */
 }
 
-.game-area-wrapper {
-  position: relative;
-  width: 100%;
-  padding-bottom: var(--game-aspect-ratio-padding); /* Enforces aspect ratio */
-  height: 0; /* Collapse height, padding-bottom gives it dimension */
-  overflow: hidden;
-  background-color: #000; /* Letterbox color if needed */
-  /* border: 2px dashed blue; /* Debug */
-}
+/* .game-area-wrapper is now less critical if .game-container directly handles aspect ratio */
+/* If using padding-bottom trick, .game-container would be simpler, and .game-area-wrapper would do this: */
+/* .game-area-wrapper { 
+    position: relative; 
+    width: 100%; 
+    padding-bottom: calc(var(--game-aspect-h) / var(--game-aspect-w) * 100%); 
+    height: 0; 
+    overflow: hidden;
+   }
+*/
 
+/* .game-area fills its parent (.game-container or .game-area-wrapper) */
 .game-area {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: absolute; /* If parent is .game-area-wrapper with padding trick */
+  /* If parent is .game-container with aspect-ratio property, position:relative and w/h 100% is enough */
+  /* Let's assume .game-container has aspect-ratio, so .game-area just fills it */
   width: 100%;
   height: 100%;
-  background-image: url('https://iili.io/3voBpEP.png'); 
+  top: 0;
+  left: 0;
+  background-image: url('https://iili.io/3vzNNqJ.png'); /* Updated URL */
   background-size: cover; 
   background-position: center center;
   background-repeat: no-repeat;
-  /* Fallback color in case image fails */
-  background-color: #101820; 
-  /* border: 2px dashed lime; /* Debug */
+  background-color: #101820; /* Fallback */
+  /* border: 1px dashed lime; /* Debugging */
 }
 
-/* Media queries for font sizes and potentially other adjustments */
-@media (max-width: 768px) {
-  body {
-    font-size: 14px;
-  }
-}
-
+/* Minor adjustments for very small screens */
 @media (max-width: 480px) {
   body {
     font-size: 12px;
   }
-  .app-container {
-    padding: 0; /* Full bleed on very small screens */
-  }
 }
 
-/* Re-paste existing theme styles here if they were omitted above */
+/* Paste full theme styles here */
 .theme-light {
   --mastil-bg-primary: #F1F5F9; --mastil-bg-secondary: #E2E8F0; --mastil-accent: #4F46E5; --mastil-accent-hover: #6366F1; --mastil-accent-active: #4338CA;
   --mastil-player: #2563EB; --mastil-player-light: #3B82F6; --mastil-player-dark: #1D4ED8; --mastil-enemy: #DC2626; --mastil-enemy-light: #EF4444; --mastil-enemy-dark: #B91C1C; --mastil-neutral: #64748B; --mastil-neutral-light: #94A3B8; --mastil-neutral-dark: #475569;
