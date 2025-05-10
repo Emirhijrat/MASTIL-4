@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .text-shadow-strong {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8),
+                -2px -2px 4px rgba(0, 0, 0, 0.8),
+                2px -2px 4px rgba(0, 0, 0, 0.8),
+                -2px 2px 4px rgba(0, 0, 0, 0.8);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.building {
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  min-width: var(--game-min-touch);
+  min-height: var(--game-min-touch);
+}
+
+.building:hover {
+  transform: scale(1.03);
+}
+
+.building.selected {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px var(--mastil-accent);
+}
+
+.unit-bubble {
+  pointer-events: none;
+}
+
+.contextual-button {
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) translateX(-50%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+  }
+}

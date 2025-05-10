@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Core game variables */
+  --game-min-touch: 44px;
+}
+
+.theme-light {
+  /* Theme colors */
+  --mastil-bg-primary: #F1F5F9;
+  --mastil-bg-secondary: #E2E8F0;
+  --mastil-accent: #4F46E5;
+  --mastil-accent-hover: #6366F1;
+  --mastil-accent-active: #4338CA;
+  
+  /* Player colors - Standard for Light Mode */
+  --mastil-player: #2563EB;
+  --mastil-player-light: #3B82F6;
+  --mastil-player-dark: #1D4ED8;
+  --mastil-enemy: #DC2626;
+  --mastil-enemy-light: #EF4444;
+  --mastil-enemy-dark: #B91C1C;
+  --mastil-neutral: #64748B;
+  --mastil-neutral-light: #94A3B8;
+  --mastil-neutral-dark: #475569;
+  
+  /* UI colors */
+  --mastil-text-primary: #0F172A;
+  --mastil-text-secondary: #334155;
+  --mastil-text-muted: #64748B;
+  --mastil-border: #CBD5E1;
+}
+
+.theme-dark {
+  /* Theme colors */
+  --mastil-bg-primary: #0F172A;
+  --mastil-bg-secondary: #1E293B;
+  --mastil-accent: #6366F1;
+  --mastil-accent-hover: #818CF8;
+  --mastil-accent-active: #4F46E5;
+  
+  /* Player colors - Enhanced for Dark Mode */
+  --mastil-player: #60A5FA;
+  --mastil-player-light: #93C5FD;
+  --mastil-player-dark: #3B82F6;
+  --mastil-enemy: #F87171;
+  --mastil-enemy-light: #FCA5A5;
+  --mastil-enemy-dark: #EF4444;
+  --mastil-neutral: #94A3B8;
+  --mastil-neutral-light: #CBD5E1;
+  --mastil-neutral-dark: #64748B;
+  
+  /* UI colors */
+  --mastil-text-primary: #F8FAFC;
+  --mastil-text-secondary: #CBD5E1;
+  --mastil-text-muted: #64748B;
+  --mastil-border: #334155;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--mastil-bg-primary);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  user-select: none;
+  color: var(--mastil-text-primary);
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Game board background */
+.game-board {
+  background-image: url('https://iili.io/3kEjCJf.png') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-color: #1a1a1a !important;
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+}
