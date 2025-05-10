@@ -25,6 +25,8 @@ export const initialBuildingData = [
   ['h4', 'neutral', 50, 1, { x: 0.50, y: 0.80 }], // Bottom mid
 ];
 
+console.log('[initialData.ts] Raw initialBuildingData:', JSON.stringify(initialBuildingData));
+
 // Map the initial data to the Building interface structure
 export const mapInitialDataToBuildings = (data: (string | OwnerType | number | { x: number; y: number } | boolean)[][]) => {
   return data.map(item => ({
@@ -39,3 +41,4 @@ export const mapInitialDataToBuildings = (data: (string | OwnerType | number | {
 };
 
 export const initialBuildings = mapInitialDataToBuildings(initialBuildingData);
+console.log('[initialData.ts] Mapped initialBuildings:', JSON.stringify(initialBuildings.map(b => ({id: b.id, owner: b.owner, units: b.units}))));

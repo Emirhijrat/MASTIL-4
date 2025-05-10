@@ -1,5 +1,8 @@
 export type OwnerType = 'player' | 'enemy' | 'neutral';
 
+export type ElementType = 'water' | 'earth' | 'air' | 'fire';
+export const ELEMENTS: ElementType[] = ['water', 'earth', 'air', 'fire'];
+
 export interface Building {
   id: string;
   owner: OwnerType;
@@ -10,7 +13,8 @@ export interface Building {
     x: number; // 0-1 percentage of game area width
     y: number; // 0-1 percentage of game area height
   };
-  isInvulnerable?: boolean; // Added invulnerability flag
+  isInvulnerable?: boolean; 
+  element?: ElementType; // Added optional element property
 }
 
 export interface UnitAnimationData {
@@ -28,7 +32,7 @@ export interface UnitAnimationData {
   progress: number;
   distance: number;
   startTime: number;
-  duration: number; // Added duration for animation
+  duration: number; 
 }
 
 export interface GameConfig {
