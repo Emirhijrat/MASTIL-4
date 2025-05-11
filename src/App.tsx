@@ -5,6 +5,9 @@ import PlayerNameInputPopup from './components/PlayerNameInputPopup';
 import PauseOverlay from './components/PauseOverlay';
 import GameOverScreen from './components/GameOverScreen';
 import GameControls from './components/GameControls';
+import StartScreen from './components/StartScreen';
+import CreditsScreen from './components/CreditsScreen';
+import SettingsScreen from './components/SettingsScreen';
 import { useGameState } from './hooks/useGameState';
 import { useTheme } from './hooks/useTheme';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -33,6 +36,8 @@ const handleGlobalError = (error: Error, errorInfo: React.ErrorInfo) => {
   // logErrorToService(formattedError);
 };
 
+type GameScreen = 'loading' | 'start' | 'playerSetup' | 'gameplay' | 'credits' | 'settings';
+
 function App() {
   console.log('=== APP RENDER START ===');
   console.log('App.tsx rendering - initializing component');
@@ -40,6 +45,15 @@ function App() {
   const { theme } = useTheme();
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [currentScreen, setCurrentScreen] = useState<GameScreen>('loading');
+  
+  // Default settings
+  const [gameSettings, setGameSettings] = useState({
+    volume: 70,
+    musicEnabled: true,
+    soundEnabled: true,
+    difficulty: 'medium' as const
+  });
 
   const {
     buildings,
@@ -64,9 +78,30 @@ function App() {
     togglePause
   } = useGameState(gameConfig);
 
-  console.log('App.tsx rendering - showPlayerInputPopup:', showPlayerInputPopup);
-  console.log('App.tsx rendering - buildings.length:', buildings.length);
+  // Handle start screen actions
+  const handleStartGame = () => {
+    setCurrentScreen('playerSetup');
+  };
 
+  const handleShowCredits = () => {
+    setCurrentScreen('credits');
+  };
+
+  const handleShowSettings = () => {
+    setCurrentScreen('settings');
+  };
+
+  const handleBackToStart = () => {
+    setCurrentScreen('start');
+  };
+
+  const handleSaveSettings = (settings) => {
+    setGameSettings(settings);
+    // Apply settings here (e.g., update volume, toggle music)
+    console.log('Settings saved:', settings);
+  };
+
+  // Initial loading
   useEffect(() => {
     try {
       document.documentElement.classList.remove('theme-light', 'theme-dark');
@@ -80,12 +115,15 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsAppLoading(false);
+      setCurrentScreen('start');
     }, 2000); // Reduced to 2 seconds for testing
     return () => clearTimeout(timer);
   }, []);
 
+  // Logging for debugging
   useEffect(() => {
     console.log('=== APP STATE UPDATE ===');
+    console.log('currentScreen:', currentScreen);
     console.log('showPlayerInputPopup:', showPlayerInputPopup);
     console.log('playerName:', playerName);
     console.log('playerElement:', playerElement);
@@ -93,7 +131,7 @@ function App() {
     console.log('selectedBuildingId:', selectedBuildingId);
     console.log('gameOver:', gameOver);
     console.log('isPaused:', isPaused);
-  }, [showPlayerInputPopup, playerName, playerElement, buildings, selectedBuildingId, gameOver, isPaused]);
+  }, [currentScreen, showPlayerInputPopup, playerName, playerElement, buildings, selectedBuildingId, gameOver, isPaused]);
 
   if (error) {
     return (
@@ -110,7 +148,8 @@ function App() {
     );
   }
 
-  if (isAppLoading) {
+  // Handle different screens
+  if (isAppLoading || currentScreen === 'loading') {
     return (
       <ErrorBoundary onError={handleGlobalError}>
         <LoadingScreen />
@@ -118,20 +157,57 @@ function App() {
     );
   }
 
-  console.log('=== APP RENDER DECISION ===');
-  console.log('Will render PlayerInputPopup:', showPlayerInputPopup);
-  console.log('Will render GameBoard:', !showPlayerInputPopup);
+  if (currentScreen === 'start') {
+    return (
+      <ErrorBoundary onError={handleGlobalError}>
+        <StartScreen 
+          onStartGame={handleStartGame}
+          onShowCredits={handleShowCredits}
+          onShowSettings={handleShowSettings}
+        />
+      </ErrorBoundary>
+    );
+  }
 
-  if (showPlayerInputPopup) {
+  if (currentScreen === 'credits') {
+    return (
+      <ErrorBoundary onError={handleGlobalError}>
+        <CreditsScreen onBack={handleBackToStart} />
+      </ErrorBoundary>
+    );
+  }
+
+  if (currentScreen === 'settings') {
+    return (
+      <ErrorBoundary onError={handleGlobalError}>
+        <SettingsScreen 
+          onBack={handleBackToStart}
+          initialVolume={gameSettings.volume}
+          initialMusicEnabled={gameSettings.musicEnabled}
+          initialSoundEnabled={gameSettings.soundEnabled}
+          initialDifficulty={gameSettings.difficulty}
+          onSaveSettings={handleSaveSettings}
+        />
+      </ErrorBoundary>
+    );
+  }
+
+  if (currentScreen === 'playerSetup' || showPlayerInputPopup) {
     return (
       <ErrorBoundary onError={handleGlobalError}>
         <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
-          <PlayerNameInputPopup onSubmit={handlePlayerSetup} />
+          <PlayerNameInputPopup 
+            onSubmit={(name, element) => {
+              handlePlayerSetup(name, element);
+              setCurrentScreen('gameplay');
+            }} 
+          />
         </div>
       </ErrorBoundary>
     );
   }
   
+  // Main gameplay screen
   return (
     <ErrorBoundary onError={handleGlobalError}>
       <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
@@ -144,17 +220,25 @@ function App() {
                 Es ist ein Problem im Spiel aufgetreten. Wir versuchen, es zu beheben.
               </p>
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  restartGame();
+                  setCurrentScreen('start');
+                }}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none"
               >
-                Spiel neu starten
+                Zurück zum Hauptmenü
               </button>
             </div>
           }
         >
           <GameControls 
             isPaused={isPaused} 
-            onTogglePause={togglePause} 
+            onTogglePause={togglePause}
+            onBackToMainMenu={() => {
+              if (window.confirm('Zurück zum Hauptmenü? Fortschritt geht verloren.')) {
+                setCurrentScreen('start');
+              }
+            }}
           />
           
           <GameBoard
@@ -163,7 +247,10 @@ function App() {
             selectBuilding={selectBuilding}
             gameOver={gameOver}
             gameOverMessage={gameOverMessage}
-            restartGame={restartGame}
+            restartGame={() => {
+              restartGame();
+              setCurrentScreen('start');
+            }}
             getUpgradeCost={getUpgradeCost}
             upgradeBuilding={upgradeBuilding}
             playerBuildingCount={playerBuildingCount}
@@ -174,14 +261,20 @@ function App() {
           
           <PauseOverlay 
             isPaused={isPaused} 
-            onResume={togglePause} 
+            onResume={togglePause}
+            onBackToMainMenu={() => {
+              setCurrentScreen('start');
+            }}
           />
           
           <GameOverScreen 
             isVisible={gameOver}
             message={gameOverMessage}
             isVictory={playerBuildingCount > 0 && enemyBuildingCount === 0}
-            onRestart={restartGame}
+            onRestart={() => {
+              restartGame();
+              setCurrentScreen('start');
+            }}
           />
         </ErrorBoundary>
         
