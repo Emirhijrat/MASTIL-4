@@ -3,7 +3,7 @@ import { Building, OwnerType, GameConfig, ElementType, ELEMENTS } from '../types
 import { useUnitAnimationDispatch } from './useUnitAnimations';
 import { useAudio } from './useAudio';
 import { initialBuildingData } from '../utils/initialData'; // Imported here
-import { makeAIDecision, handleAIEvent } from '../ai/enemyAI';
+import { makeAIDecision, handleAIEvent, getRandomMessage } from '../ai/enemyAI';
 
 export function useGameState(config: GameConfig) {
   const [buildings, setBuildings] = useState<Building[]>([]);

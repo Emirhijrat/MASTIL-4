@@ -333,3 +333,5 @@ export const handleAIEvent = (
   showMessage(getRandomMessage(eventType));
   state.lastMessage = now;
 };
+
+export { makeAIDecision, handleAIEvent, getRandomMessage };
