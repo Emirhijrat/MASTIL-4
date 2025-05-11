@@ -8,6 +8,16 @@ import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 import { gameConfig } from './utils/gameConfig';
 
+// Global error handler to catch unhandled errors
+const handleGlobalError = (error: Error, errorInfo: React.ErrorInfo) => {
+  console.error('=== GLOBAL ERROR HANDLER ===');
+  console.error('Error:', error);
+  console.error('Component Stack:', errorInfo.componentStack);
+  
+  // Here you could send the error to a logging service
+  // logErrorToService(error, errorInfo);
+};
+
 function App() {
   console.log('=== APP RENDER START ===');
   console.log('App.tsx rendering - initializing component');
@@ -83,7 +93,11 @@ function App() {
   }
 
   if (isAppLoading) {
-    return <LoadingScreen />;
+    return (
+      <ErrorBoundary onError={handleGlobalError}>
+        <LoadingScreen />
+      </ErrorBoundary>
+    );
   }
 
   console.log('=== APP RENDER DECISION ===');
@@ -92,7 +106,7 @@ function App() {
 
   if (showPlayerInputPopup) {
     return (
-      <ErrorBoundary>
+      <ErrorBoundary onError={handleGlobalError}>
         <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
           <PlayerNameInputPopup onSubmit={handlePlayerSetup} />
         </div>
@@ -101,22 +115,41 @@ function App() {
   }
   
   return (
-    <ErrorBoundary>
+    <ErrorBoundary onError={handleGlobalError}>
       <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
-        <GameBoard
-          buildings={buildings}
-          selectedBuildingId={selectedBuildingId}
-          selectBuilding={selectBuilding}
-          gameOver={gameOver}
-          gameOverMessage={gameOverMessage}
-          restartGame={restartGame}
-          getUpgradeCost={getUpgradeCost}
-          upgradeBuilding={upgradeBuilding}
-          playerBuildingCount={playerBuildingCount}
-          enemyBuildingCount={enemyBuildingCount}
-          message={message || ''}
-          showMessage={showMessage}
-        />
+        <ErrorBoundary
+          onError={handleGlobalError}
+          fallback={
+            <div className="game-error-container p-6 bg-red-50 rounded-lg shadow-lg max-w-lg mx-auto text-center">
+              <h2 className="text-xl font-bold text-red-800 mb-4">Spielfehler</h2>
+              <p className="mb-4">
+                Es ist ein Problem im Spiel aufgetreten. Wir versuchen, es zu beheben.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none"
+              >
+                Spiel neu starten
+              </button>
+            </div>
+          }
+        >
+          <GameBoard
+            buildings={buildings}
+            selectedBuildingId={selectedBuildingId}
+            selectBuilding={selectBuilding}
+            gameOver={gameOver}
+            gameOverMessage={gameOverMessage}
+            restartGame={restartGame}
+            getUpgradeCost={getUpgradeCost}
+            upgradeBuilding={upgradeBuilding}
+            playerBuildingCount={playerBuildingCount}
+            enemyBuildingCount={enemyBuildingCount}
+            message={message || ''}
+            showMessage={showMessage}
+          />
+        </ErrorBoundary>
+        
         {message && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-700 text-white px-4 py-2 rounded shadow-lg z-[2500]">
             {message}
