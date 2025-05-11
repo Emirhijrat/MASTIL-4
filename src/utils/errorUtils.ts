@@ -19,7 +19,7 @@ export function formatErrorForReporting(
   const userAgent = navigator.userAgent;
   
   // Get version from package.json
-  const gameVersion = '1.0.4'; // From package.json
+  const gameVersion = '1.0.6'; // From package.json
   
   // Handle case where error is not an Error object
   const errorObject = error instanceof Error 

@@ -11,7 +11,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
   onShowCredits, 
   onShowSettings 
 }) => {
-  const version = "Version 1.0.5";
+  const version = "Version 1.0.6";
   const gameTitle = "MASTIL";
   const quote = "Der Schatten meiner Armee ist der Vorbote eures Untergangs.";
 
