@@ -8,8 +8,11 @@ import './App.css';
 import { gameConfig } from './utils/gameConfig';
 
 function App() {
+  console.log('=== APP RENDER START ===');
+  
   const { theme } = useTheme();
   const [isAppLoading, setIsAppLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const {
     buildings,
@@ -28,30 +31,66 @@ function App() {
     playerName,
     playerElement,
     aiElement,
+    playerBuildingCount,
+    enemyBuildingCount
   } = useGameState(gameConfig);
 
   useEffect(() => {
-    document.documentElement.classList.remove('theme-light', 'theme-dark');
-    document.documentElement.classList.add(`theme-${theme}`);
+    try {
+      document.documentElement.classList.remove('theme-light', 'theme-dark');
+      document.documentElement.classList.add(`theme-${theme}`);
+    } catch (err) {
+      console.error('Error setting theme:', err);
+      setError(err instanceof Error ? err : new Error('Unknown theme error'));
+    }
   }, [theme]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsAppLoading(false);
-    }, 10000); // Changed to 10 seconds
+    }, 2000); // Reduced to 2 seconds for testing
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    // console.log(`[App.tsx] Top-level state: isAppLoading=${isAppLoading}, showPlayerInputPopup=${showPlayerInputPopup}, buildingsCount=${buildings.length}`);
-  }, [isAppLoading, showPlayerInputPopup, buildings]);
+    console.log('=== APP STATE UPDATE ===');
+    console.log('showPlayerInputPopup:', showPlayerInputPopup);
+    console.log('playerName:', playerName);
+    console.log('playerElement:', playerElement);
+    console.log('buildings length:', buildings.length);
+    console.log('selectedBuildingId:', selectedBuildingId);
+    console.log('gameOver:', gameOver);
+  }, [showPlayerInputPopup, playerName, playerElement, buildings, selectedBuildingId, gameOver]);
+
+  if (error) {
+    return (
+      <div className="error-container p-4 text-red-500">
+        <h2>Ein Fehler ist aufgetreten:</h2>
+        <p>{error.message}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Neu laden
+        </button>
+      </div>
+    );
+  }
 
   if (isAppLoading) {
     return <LoadingScreen />;
   }
 
+  console.log('=== APP RENDER DECISION ===');
+  console.log('Will render PlayerInputPopup:', showPlayerInputPopup);
+  console.log('Will render GameBoard:', !showPlayerInputPopup);
+
   if (showPlayerInputPopup) {
-    return <PlayerNameInputPopup onSubmit={handlePlayerSetup} />;
+    return (
+      <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
+        <PlayerNameInputPopup onSubmit={handlePlayerSetup} />
+      </div>
+    );
   }
   
   return (
@@ -60,16 +99,15 @@ function App() {
         buildings={buildings}
         selectedBuildingId={selectedBuildingId}
         selectBuilding={selectBuilding}
-        deselectBuilding={deselectBuilding}
-        getUpgradeCost={getUpgradeCost}
-        upgradeBuilding={upgradeBuilding} 
-        showMessage={showMessage}
-        playerElement={playerElement}
-        aiElement={aiElement}
         gameOver={gameOver}
         gameOverMessage={gameOverMessage}
-        playerName={playerName}
         restartGame={restartGame}
+        getUpgradeCost={getUpgradeCost}
+        upgradeBuilding={upgradeBuilding}
+        playerBuildingCount={playerBuildingCount}
+        enemyBuildingCount={enemyBuildingCount}
+        message={message || ''}
+        showMessage={showMessage}
       />
       {message && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-700 text-white px-4 py-2 rounded shadow-lg z-[2500]">

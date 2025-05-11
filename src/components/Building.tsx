@@ -2,6 +2,8 @@ import React, { forwardRef } from 'react';
 import { Building as BuildingType } from '../types/gameTypes';
 import { getColorClasses } from '../utils/helpers';
 import ContextualUpgradeButton from './ContextualUpgradeButton';
+import UnitAnimations from './UnitAnimation';
+import MedievalHouse from './MedievalHouse';
 
 interface BuildingProps {
   building: BuildingType;
@@ -21,6 +23,17 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
   onUpgrade
 }, ref) => {
   
+  const getBuildingVisual = () => {
+    if (building.owner === 'neutral') {
+      // Use a deterministic variation based on the building's ID
+      const variation = (parseInt(building.id) % 3) + 1 as 1 | 2 | 3;
+      return <MedievalHouse variation={variation} selected={selected} />;
+    }
+    
+    // ... existing code for player and enemy buildings ...
+    return null;
+  };
+
   return (
     <div 
       ref={ref}
@@ -51,50 +64,7 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
 
       {/* Building visual */}
       <div className="relative w-full h-full flex items-center justify-center">
-        {building.owner === 'neutral' ? (
-          // Neutral building placeholder
-          <div className="w-3/4 h-3/4 rounded-lg bg-[var(--mastil-neutral)] 
-                        border-2 border-[var(--mastil-neutral-light)] opacity-80" />
-        ) : (
-          // Player/Enemy tower SVG
-          <svg 
-            viewBox="0 0 100 120" 
-            className="w-full h-full"
-            style={{
-              filter: selected ? 'drop-shadow(0 0 8px var(--mastil-accent))' : 'none'
-            }}
-          >
-            <path
-              d={`
-                M 20,120 
-                L 20,40 
-                L 10,30 
-                L 50,10 
-                L 90,30 
-                L 80,40 
-                L 80,120 
-                L 60,120 
-                L 60,90 
-                L 40,90 
-                L 40,120 
-                Z
-              `}
-              fill={building.owner === 'player' ? 'var(--mastil-player)' : 'var(--mastil-enemy)'}
-              stroke={building.owner === 'player' ? 'var(--mastil-player-light)' : 'var(--mastil-enemy-light)'}
-              strokeWidth="2"
-            />
-            {/* Windows */}
-            <rect x="35" y="50" width="10" height="15" fill="currentColor" opacity="0.3" />
-            <rect x="55" y="50" width="10" height="15" fill="currentColor" opacity="0.3" />
-            {/* Battlements */}
-            <path
-              d="M 15,35 L 25,25 L 35,35 L 45,25 L 55,35 L 65,25 L 75,35 L 85,25"
-              fill="none"
-              stroke={building.owner === 'player' ? 'var(--mastil-player-light)' : 'var(--mastil-enemy-light)'}
-              strokeWidth="2"
-            />
-          </svg>
-        )}
+        {getBuildingVisual()}
       </div>
 
       {/* Level text centered below the building */}

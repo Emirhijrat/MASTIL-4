@@ -27,11 +27,25 @@ export function useGameState(config: GameConfig) {
   }, [showPlayerInputPopup, playerElement]);
 
   useEffect(() => {
-    console.log('[useGameState DEBUG] Buildings state updated (short):', buildings.map(b => ({id: b.id, owner: b.owner, units: b.units, element: b.element?.charAt(0) })));
-    if (buildings.length > 0) {
-        // console.log('[useGameState DEBUG] First building details:', JSON.stringify(buildings[0]));
-    } else {
-        // console.log('[useGameState DEBUG] Buildings array is empty after update.');
+    try {
+      console.log('=== BUILDINGS STATE UPDATE ===');
+      console.log('Buildings array length:', buildings.length);
+      if (buildings.length > 0) {
+        console.log('First building:', buildings[0]);
+        console.log('Last building:', buildings[buildings.length - 1]);
+        console.log('Building owners:', buildings.map(b => ({ id: b.id, owner: b.owner })));
+        
+        // Validate building data
+        buildings.forEach((building, index) => {
+          if (!building.id || !building.owner || typeof building.units !== 'number' || !building.position) {
+            console.error(`Invalid building data at index ${index}:`, building);
+          }
+        });
+      } else {
+        console.log('Buildings array is empty');
+      }
+    } catch (error) {
+      console.error('Error in buildings state effect:', error);
     }
   }, [buildings]);
 
@@ -105,41 +119,63 @@ export function useGameState(config: GameConfig) {
   }, [playAttackSound, showMessage, startUnitAnimation, handleUnitsArrival, showPlayerInputPopup]);
   
   const handlePlayerSetup = useCallback((name: string, element: ElementType) => {
-    console.log(`[useGameState] handlePlayerSetup called. Name: ${name}, Element: ${element}`);
-    setPlayerName(name);
-    setPlayerElement(element);
-    let assignedAiElement: ElementType;
-    do { assignedAiElement = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)]; } while (assignedAiElement === element);
-    setAiElement(assignedAiElement);
-
-    // Log the raw initialBuildingData that this function is about to use
-    console.log('[useGameState handlePlayerSetup] Raw initialBuildingData being used:', JSON.stringify(initialBuildingData.map(b => b[0]))); // Log only IDs for brevity
-
-    const newBuildings = initialBuildingData.map((data, index) => {
-      const buildingId = data[0] as string;
-      const owner = data[1] as OwnerType;
-      const initialUnits = data[2] as number;
-      const level = data[3] as number;
-      const position = data[4] as { x: number; y: number };
-      const buildingElement = owner === 'player' ? element : (owner === 'enemy' ? assignedAiElement : undefined);
+    try {
+      console.log('=== PLAYER SETUP START ===');
+      console.log('Input received:', { name, element });
       
-      // Log each building ID being created
-      console.log(`[useGameState handlePlayerSetup] Creating building from map: id=${buildingId}`);
-      
-      return {
-        id: buildingId, owner, units: initialUnits, 
-        maxUnits: config.maxUnitsPerBuilding, level, position, element: buildingElement,
-      };
-    });
-    console.log("[useGameState] handlePlayerSetup - newBuildings to be set (summary):", newBuildings.map(b => ({id: b.id, owner: b.owner, units: b.units, element: b.element?.charAt(0) })));
-    setBuildings(newBuildings);
-    setSelectedBuildingId(null); setGameOver(false); setGameOverMessage('');
-    console.log("[useGameState] handlePlayerSetup IS EXPLICITLY SETTING showPlayerInputPopup to false");
-    setShowPlayerInputPopup(false);
-    showMessage(`Majestät ${name}, Eure ${element} Truppen erwarten Eure Befehle! Der Feind kontrolliert die Macht des ${assignedAiElement}.`);
-    if (typeof playBackgroundMusic === 'function') playBackgroundMusic();
+      if (!name || !element) {
+        throw new Error('Invalid player setup: name or element is missing');
+      }
 
-  }, [config.maxUnitsPerBuilding, showMessage, playBackgroundMusic]);
+      console.log('Setting player name and element...');
+      setPlayerName(name);
+      setPlayerElement(element);
+      
+      console.log('Determining AI element...');
+      let assignedAiElement: ElementType;
+      do { 
+        assignedAiElement = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)]; 
+      } while (assignedAiElement === element);
+      setAiElement(assignedAiElement);
+
+      console.log('=== BUILDING INITIALIZATION ===');
+      if (!initialBuildingData || !Array.isArray(initialBuildingData)) {
+        throw new Error('initialBuildingData is invalid or not an array');
+      }
+      console.log('Raw initialBuildingData:', JSON.stringify(initialBuildingData, null, 2));
+
+      console.log('Creating buildings...');
+      const newBuildings = initialBuildingData.map(item => ({
+        id: item[0],
+        owner: item[1],
+        units: item[2],
+        maxUnits: 100,
+        level: item[3],
+        position: item[4],
+        isInvulnerable: item[5] || false,
+      }));
+
+      console.log('Setting buildings state...');
+      setBuildings(newBuildings);
+      
+      console.log('Setting game start time...');
+      localStorage.setItem('gameStartTime', Date.now().toString());
+      
+      console.log('Hiding player input popup...');
+      setShowPlayerInputPopup(false);
+      
+      console.log('=== PLAYER SETUP COMPLETE ===');
+      console.log('Final state:', {
+        playerName: name,
+        playerElement: element,
+        aiElement: assignedAiElement,
+        buildingsCount: newBuildings.length
+      });
+    } catch (error) {
+      console.error('Error in handlePlayerSetup:', error);
+      throw error;
+    }
+  }, []);
 
   const selectBuilding = useCallback((buildingId: string) => {
     if (showPlayerInputPopup) return;
@@ -385,12 +421,44 @@ export function useGameState(config: GameConfig) {
     }
   }, [buildings, checkWinCondition, showPlayerInputPopup, gameOver]);
 
-  const initializeGame = () => {
-    // Set game start time if not already set
-    if (!localStorage.getItem('gameStartTime')) {
-      localStorage.setItem('gameStartTime', Date.now().toString());
+  const initializeGame = useCallback(() => {
+    console.log('=== INITIAL BUILDING DATA SOURCE ===');
+    console.log('Source array length:', initialBuildingData.length);
+    console.log('Raw initialBuildingData:', JSON.stringify(initialBuildingData, null, 2));
+    
+    const newBuildings = initialBuildingData.map(building => {
+      console.log(`Creating building: ${building.id} at position:`, building.position);
+      return {
+        ...building,
+        units: building.initialUnits || 0,
+        level: 1,
+        lastUpdated: Date.now(),
+        owner: building.owner || 'neutral'
+      };
+    });
+
+    console.log('=== FINAL BUILDINGS ARRAY ===');
+    console.log('Total buildings created:', newBuildings.length);
+    console.log('Building IDs:', newBuildings.map(b => b.id));
+    
+    setBuildings(newBuildings);
+    setSelectedBuildingId(null);
+    setGameOver(false);
+    setGameOverMessage('');
+    setMessage('');
+  }, []);
+
+  useEffect(() => {
+    console.log('=== LOCAL STORAGE CHECK ===');
+    const savedBuildings = localStorage.getItem('buildings');
+    if (savedBuildings) {
+      console.log('Found saved buildings in localStorage:', JSON.parse(savedBuildings));
+    } else {
+      console.log('No saved buildings found in localStorage');
     }
-  };
+    
+    initializeGame();
+  }, [initializeGame]);
 
   return {
     buildings, selectedBuildingId, message, gameOver, gameOverMessage, playerBuildingCount: buildings.filter(b => b.owner === 'player').length, 

@@ -1,5 +1,17 @@
+import { Building, OwnerType } from '../types/gameTypes';
+
+// Define the raw data type
+type RawBuildingData = [
+  string, // id
+  OwnerType, // owner
+  number, // initialUnits
+  number, // level
+  { x: number; y: number }, // position
+  boolean? // isInvulnerable (optional)
+];
+
 // Format: [id, owner, initialUnits, level, {x, y}, isInvulnerable?]
-export const initialBuildingData = [
+export const initialBuildingData: RawBuildingData[] = [
   // Player and Enemy bases - positioned at opposite sides
   ['b1', 'player', 20, 1, { x: 0.10, y: 0.5 }], // Player base (far left)
   ['b2', 'enemy', 20, 1, { x: 0.90, y: 0.5 }, true],  // Enemy base (far right) - Initially invulnerable
@@ -25,20 +37,34 @@ export const initialBuildingData = [
   ['h4', 'neutral', 50, 1, { x: 0.50, y: 0.80 }], // Bottom mid
 ];
 
-console.log('[initialData.ts] Raw initialBuildingData:', JSON.stringify(initialBuildingData));
+console.log('=== INITIAL DATA VERIFICATION ===');
+console.log('Total buildings defined:', initialBuildingData.length);
+console.log('Building IDs:', initialBuildingData.map(b => b[0]));
+console.log('Neutral buildings:', initialBuildingData
+  .filter(b => b[1] === 'neutral')
+  .map(b => ({
+    id: b[0],
+    position: b[4]
+  }))
+);
 
 // Map the initial data to the Building interface structure
-export const mapInitialDataToBuildings = (data: (string | OwnerType | number | { x: number; y: number } | boolean)[][]) => {
+export const mapInitialDataToBuildings = (data: RawBuildingData[]): Building[] => {
   return data.map(item => ({
-    id: item[0] as string,
-    owner: item[1] as OwnerType,
-    units: item[2] as number,
-    maxUnits: 100, // Assuming a base max units, might need adjustment
-    level: item[3] as number,
-    position: item[4] as { x: number; y: number },
-    isInvulnerable: item[5] as boolean | undefined, // Read the invulnerable flag if it exists
+    id: item[0],
+    owner: item[1],
+    units: item[2],
+    maxUnits: 100, // Base max units
+    level: item[3],
+    position: item[4],
+    isInvulnerable: item[5] || false,
   }));
 };
 
 export const initialBuildings = mapInitialDataToBuildings(initialBuildingData);
-console.log('[initialData.ts] Mapped initialBuildings:', JSON.stringify(initialBuildings.map(b => ({id: b.id, owner: b.owner, units: b.units}))));
+console.log('[initialData.ts] Mapped initialBuildings:', JSON.stringify(initialBuildings.map(b => ({
+  id: b.id,
+  owner: b.owner,
+  units: b.units,
+  position: b.position
+}))));
