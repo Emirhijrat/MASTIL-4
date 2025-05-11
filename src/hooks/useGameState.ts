@@ -14,6 +14,8 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
   // Ensure config is never undefined
   const gameConfig = config || defaultGameConfig;
 
+  // ----- All useState hooks first -----
+  
   // Player state
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -23,8 +25,10 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
   const [playerName, setPlayerName] = useState('Majestät');
   const [playerElement, setPlayerElement] = useState<ElementType | null>(null);
   const [aiElement, setAiElement] = useState<ElementType | null>(null);
-  // Add pause state
   const [isPaused, setIsPaused] = useState(false);
+  
+  // Add a state to track units in production for each building
+  const [unitsInProduction, setUnitsInProduction] = useState<Record<string, number>>({});
 
   // Game events for commentary system
   const [gameEvents, setGameEvents] = useState({
@@ -35,32 +39,13 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
     combatOccurring: false
   });
   
-  // Reset game events after they've been processed
-  useEffect(() => {
-    if (Object.values(gameEvents).some(value => value === true)) {
-      const resetTimer = setTimeout(() => {
-        setGameEvents({
-          playerCapturedBuilding: false,
-          playerLostBuilding: false,
-          enemyCapturedBuilding: false,
-          enemyLostBuilding: false,
-          combatOccurring: false
-        });
-      }, 1000);
-      
-      return () => clearTimeout(resetTimer);
-    }
-  }, [gameEvents]);
-
+  // ----- All useRef hooks -----
+  
   // Track popup state changes
   const prevShowPlayerInputPopupRef = useRef<boolean>(showPlayerInputPopup);
-  useEffect(() => {
-    if (prevShowPlayerInputPopupRef.current !== showPlayerInputPopup) {
-      console.log(`[useGameState DEBUG] showPlayerInputPopup CHANGED from ${prevShowPlayerInputPopupRef.current} to ${showPlayerInputPopup}. playerElement: ${playerElement}`);
-    }
-    prevShowPlayerInputPopupRef.current = showPlayerInputPopup;
-  }, [showPlayerInputPopup, playerElement]);
-
+  
+  // ----- All hook results from other hooks -----
+  
   // Use the building management hook
   const {
     buildings,
@@ -72,58 +57,36 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
     setupBuildingUnitGeneration
   } = useBuildingManagement(gameConfig);
 
-  // Log buildings state updates
-  useEffect(() => {
-    try {
-      console.log('=== BUILDINGS STATE UPDATE ===');
-      console.log('[useGameState] Buildings array length:', buildings.length);
-      console.log('[useGameState] showPlayerInputPopup:', showPlayerInputPopup);
-      console.log('[useGameState] playerElement:', playerElement);
-      console.log('[useGameState] aiElement:', aiElement);
-      
-      // Add the requested log
-      console.log('[useGameState] Buildings state FINALLY updated in useEffect:', JSON.stringify(buildings.map(b => ({id: b.id, owner: b.owner, units: b.units}))));
-      
-      if (buildings.length > 0) {
-        console.log('[useGameState] Buildings array is populated:');
-        console.log('[useGameState] First building:', buildings[0]);
-        console.log('[useGameState] Last building:', buildings[buildings.length - 1]);
-        console.log('[useGameState] Building owners count:', {
-          player: buildings.filter(b => b.owner === 'player').length,
-          enemy: buildings.filter(b => b.owner === 'enemy').length,
-          neutral: buildings.filter(b => b.owner === 'neutral').length,
-          total: buildings.length
-        });
-        console.log('[useGameState] All buildings:', buildings.map(b => ({ 
-          id: b.id, 
-          owner: b.owner,
-          element: b.element,
-          position: b.position
-        })));
-        
-        // Validate building data
-        let hasErrors = false;
-        buildings.forEach((building, index) => {
-          if (!building.id || !building.owner || typeof building.units !== 'number' || !building.position) {
-            console.error(`[useGameState] ERROR: Invalid building data at index ${index}:`, building);
-            hasErrors = true;
-          }
-        });
-        
-        if (!hasErrors) {
-          console.log('[useGameState] All buildings have valid data structure');
-        }
-      } else {
-        console.warn('[useGameState] Buildings array is empty');
-      }
-    } catch (error) {
-      console.error('[useGameState] ERROR in buildings state effect:', error);
-    }
-  }, [buildings, showPlayerInputPopup, playerElement, aiElement]);
-
   const { startUnitAnimation } = useUnitAnimationDispatch();
-  const { playAttackSound, playBackgroundMusic, stopBackgroundMusic, playDeploySound, playUpgradeSound } = useAudio();
+  
+  const { 
+    playAttackSound, 
+    playBackgroundMusic, 
+    stopBackgroundMusic, 
+    playDeploySound, 
+    playUpgradeSound 
+  } = useAudio();
+  
+  // Initialize the commentary system
+  const { forceComment, canDisplayMessage, displayMessage } = useGameCommentary({
+    isGameActive: !showPlayerInputPopup && !gameOver,
+    isPaused,
+    playerBuildingCount: buildings.filter(b => b.owner === 'player').length,
+    enemyBuildingCount: buildings.filter(b => b.owner === 'enemy').length,
+    showMessage: (text: string, speaker?: string, speakerColor?: string) => {
+      // Format message with speaker if provided
+      const formattedMessage = speaker ? `${speaker}: ${text}` : text;
+      setMessage(formattedMessage);
+      
+      // Higher timeout for comments to give players time to read
+      const messageTimeout = speaker ? 5000 : 3000;
+      setTimeout(() => setMessage(null), messageTimeout);
+    },
+    gameEvents
+  });
 
+  // ----- All useCallback functions -----
+  
   // Enhanced message display logic with speaker information
   const showMessage = useCallback((text: string, speaker?: string, speakerColor?: string) => {
     // Format message with speaker if provided
@@ -134,19 +97,6 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
     const messageTimeout = speaker ? 5000 : 3000;
     setTimeout(() => setMessage(null), messageTimeout);
   }, []);
-  
-  // Initialize the commentary system
-  const { forceComment, canDisplayMessage, displayMessage } = useGameCommentary({
-    isGameActive: !showPlayerInputPopup && !gameOver,
-    isPaused,
-    playerBuildingCount: buildings.filter(b => b.owner === 'player').length,
-    enemyBuildingCount: buildings.filter(b => b.owner === 'enemy').length,
-    showMessage,
-    gameEvents
-  });
-
-  // Add a state to track units in production for each building
-  const [unitsInProduction, setUnitsInProduction] = useState<Record<string, number>>({});
 
   // Wrap the base upgrade function
   const upgradeBuilding = useCallback((buildingToUpgrade: Building) => {
@@ -217,7 +167,7 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
     playAttackSound();
     playDeploySound();
     startUnitAnimation(sourceBuilding, targetBuilding, unitsToSend, sourceBuilding.owner, handleUnitsArrival);
-  }, [playAttackSound, showMessage, startUnitAnimation, handleUnitsArrival, showPlayerInputPopup, setBuildings, isPaused, playDeploySound]);
+  }, [playAttackSound, showMessage, startUnitAnimation, handleUnitsArrival, showPlayerInputPopup, setBuildings, isPaused, playDeploySound, buildings]);
   
   // Player setup logic
   const handlePlayerSetup = useCallback((name: string, element: ElementType) => {
@@ -374,40 +324,7 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       showMessage("Game Resumed");
     }
   }, [showPlayerInputPopup, gameOver, isPaused, showMessage]);
-
-  // Set up neutral behavior - pass isPaused flag and commentary functions
-  useNeutralBehavior({
-    buildings,
-    setBuildings,
-    gameOver,
-    showPlayerInputPopup,
-    showMessage,
-    config: gameConfig,
-    startUnitAnimation,
-    handleUnitsArrival,
-    isPaused,
-    canDisplayMessage,
-    displayMessage
-  });
-
-  // Setup building unit generation for player and enemy
-  useEffect(() => {
-    const cleanup = setupBuildingUnitGeneration(
-      gameOver,
-      showPlayerInputPopup,
-      gameConfig.unitGenerationInterval,
-      isPaused
-    );
-    return cleanup;
-  }, [setupBuildingUnitGeneration, gameOver, showPlayerInputPopup, gameConfig.unitGenerationInterval, isPaused]);
-
-  // Check win conditions
-  useEffect(() => {
-    if (!showPlayerInputPopup && buildings.length > 0 && !gameOver && !isPaused) { 
-      checkWinCondition();
-    }
-  }, [buildings, checkWinCondition, showPlayerInputPopup, gameOver, isPaused]);
-
+  
   // In the generateUnits function, track units in production
   const generateUnits = useCallback(() => {
     // Clone the current unitsInProduction state
@@ -455,12 +372,6 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
     setUnitsInProduction(newUnitsInProduction);
   }, [buildings, gameOver, unitsInProduction]);
 
-  // Add log for initializeGame call
-  useEffect(() => {
-    console.log('[useGameState] Attempting to call initializeGame/handlePlayerSetup.');
-    // Other code in this useEffect if it exists
-  }, []);
-
   const handleAutoUpgrade = useCallback(() => {
     // Auto-Upgrade für Gebäude, die ausreichend Ressourcen haben
     if (showPlayerInputPopup) return;
@@ -489,8 +400,128 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       return modified ? newBuildings : prevBuildings;
     });
   }, [calculateUpgradeCost, config.maxUnitsPerBuilding, showMessage, showPlayerInputPopup]);
+  
+  // ----- All useEffect hooks -----
+  
+  // Reset game events after they've been processed
+  useEffect(() => {
+    if (Object.values(gameEvents).some(value => value === true)) {
+      const resetTimer = setTimeout(() => {
+        setGameEvents({
+          playerCapturedBuilding: false,
+          playerLostBuilding: false,
+          enemyCapturedBuilding: false,
+          enemyLostBuilding: false,
+          combatOccurring: false
+        });
+      }, 1000);
+      
+      return () => clearTimeout(resetTimer);
+    }
+  }, [gameEvents]);
+  
+  // Track popup state changes
+  useEffect(() => {
+    if (prevShowPlayerInputPopupRef.current !== showPlayerInputPopup) {
+      console.log(`[useGameState DEBUG] showPlayerInputPopup CHANGED from ${prevShowPlayerInputPopupRef.current} to ${showPlayerInputPopup}. playerElement: ${playerElement}`);
+    }
+    prevShowPlayerInputPopupRef.current = showPlayerInputPopup;
+  }, [showPlayerInputPopup, playerElement]);
+  
+  // Log buildings state updates
+  useEffect(() => {
+    try {
+      console.log('=== BUILDINGS STATE UPDATE ===');
+      console.log('[useGameState] Buildings array length:', buildings.length);
+      console.log('[useGameState] showPlayerInputPopup:', showPlayerInputPopup);
+      console.log('[useGameState] playerElement:', playerElement);
+      console.log('[useGameState] aiElement:', aiElement);
+      
+      // Add the requested log
+      console.log('[useGameState] Buildings state FINALLY updated in useEffect:', JSON.stringify(buildings.map(b => ({id: b.id, owner: b.owner, units: b.units}))));
+      
+      if (buildings.length > 0) {
+        console.log('[useGameState] Buildings array is populated:');
+        console.log('[useGameState] First building:', buildings[0]);
+        console.log('[useGameState] Last building:', buildings[buildings.length - 1]);
+        console.log('[useGameState] Building owners count:', {
+          player: buildings.filter(b => b.owner === 'player').length,
+          enemy: buildings.filter(b => b.owner === 'enemy').length,
+          neutral: buildings.filter(b => b.owner === 'neutral').length,
+          total: buildings.length
+        });
+        console.log('[useGameState] All buildings:', buildings.map(b => ({ 
+          id: b.id, 
+          owner: b.owner,
+          element: b.element,
+          position: b.position
+        })));
+        
+        // Validate building data
+        let hasErrors = false;
+        buildings.forEach((building, index) => {
+          if (!building.id || !building.owner || typeof building.units !== 'number' || !building.position) {
+            console.error(`[useGameState] ERROR: Invalid building data at index ${index}:`, building);
+            hasErrors = true;
+          }
+        });
+        
+        if (!hasErrors) {
+          console.log('[useGameState] All buildings have valid data structure');
+        }
+      } else {
+        console.warn('[useGameState] Buildings array is empty');
+      }
+    } catch (error) {
+      console.error('[useGameState] ERROR in buildings state effect:', error);
+    }
+  }, [buildings, showPlayerInputPopup, playerElement, aiElement]);
+  
+  // Set up neutral behavior - pass isPaused flag and commentary functions
+  useEffect(() => {
+    // Wrap in useEffect to ensure it's only executed once
+    useNeutralBehavior({
+      buildings,
+      setBuildings,
+      gameOver,
+      showPlayerInputPopup,
+      showMessage,
+      config: gameConfig,
+      startUnitAnimation,
+      handleUnitsArrival,
+      isPaused,
+      canDisplayMessage,
+      displayMessage
+    });
+    // Dependencies intentionally empty to run only once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Füge einen neuen useEffect hinzu, der die Auto-Upgrade-Funktion aufruft
+  // Setup building unit generation for player and enemy
+  useEffect(() => {
+    const cleanup = setupBuildingUnitGeneration(
+      gameOver,
+      showPlayerInputPopup,
+      gameConfig.unitGenerationInterval,
+      isPaused
+    );
+    return cleanup;
+  }, [setupBuildingUnitGeneration, gameOver, showPlayerInputPopup, gameConfig.unitGenerationInterval, isPaused]);
+
+  // Check win conditions
+  useEffect(() => {
+    if (!showPlayerInputPopup && buildings.length > 0 && !gameOver && !isPaused) { 
+      checkWinCondition();
+    }
+  }, [buildings, checkWinCondition, showPlayerInputPopup, gameOver, isPaused]);
+  
+  // Add log for initializeGame call
+  useEffect(() => {
+    console.log('[useGameState] Attempting to call initializeGame/handlePlayerSetup.');
+    // Other code in this useEffect if it exists
+  }, []);
+
+  // Auto-Upgrade-Funktion
   useEffect(() => {
     // Prüfe alle 30 Sekunden, ob Gebäude automatisch aufgewertet werden können
     if (gameOver || showPlayerInputPopup) return;

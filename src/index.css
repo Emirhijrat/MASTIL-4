@@ -105,26 +105,32 @@
   min-width: var(--game-min-touch);
   min-height: var(--game-min-touch);
   pointer-events: auto; /* Re-enable pointer events for individual buildings */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
 }
 
 .building:hover {
-  transform: translate(-50%, -50%) scale(1.03);
+  transform: translate(-50%, -50%) scale(1.05);
+  z-index: 20;
 }
 
 .building.selected {
-  transform: translate(-50%, -50%) scale(1.05);
-  box-shadow: 0 0 20px var(--mastil-accent);
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 0 20px rgba(255, 217, 0, 0.8);
+  z-index: 30;
 }
 
 .building.building-highlight-source {
   transform: translate(-50%, -50%) scale(1.1);
-  z-index: 20;
+  z-index: 40;
   animation: pulseSource 1.5s ease-in-out;
 }
 
 .building.building-highlight-target {
   transform: translate(-50%, -50%) scale(1.1);
-  z-index: 20;
+  z-index: 40;
   animation: pulseTarget 1.5s ease-in-out;
 }
 

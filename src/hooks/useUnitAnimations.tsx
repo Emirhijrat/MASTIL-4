@@ -43,13 +43,31 @@ export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
       const container = document.querySelector('.game-area');
       if (container) {
         containerDimensions.current = { width: container.clientWidth, height: container.clientHeight };
-      } 
+        console.log('[useUnitAnimations] Updated dimensions:', containerDimensions.current);
+      } else {
+        console.warn('[useUnitAnimations] Game area element not found');
+      }
     };
+    
+    // Führe mehrere Versuche durch, um die Dimensionen zu holen
     const initialCheckTimeout = setTimeout(updateDimensions, 100);
+    const secondCheckTimeout = setTimeout(updateDimensions, 500);
+    const thirdCheckTimeout = setTimeout(updateDimensions, 1000);
+    
+    // Versuche kontinuierlich, die Dimensionen zu aktualisieren
+    const dimensionInterval = setInterval(updateDimensions, 2000);
+    
     window.addEventListener('resize', updateDimensions);
+    
+    // Initialer Ausführung für den Fall, dass der DOM bereits bereit ist
+    updateDimensions();
+    
     return () => {
       isMounted.current = false;
       clearTimeout(initialCheckTimeout);
+      clearTimeout(secondCheckTimeout);
+      clearTimeout(thirdCheckTimeout);
+      clearInterval(dimensionInterval);
       window.removeEventListener('resize', updateDimensions);
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
     };
@@ -124,63 +142,103 @@ export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     console.log(`[useUnitAnimations] startUnitAttack: ${source.id} -> ${target.id}, Units: ${units}`);
     
-    // Get current container dimensions
-    const { width: currentContainerWidth, height: currentContainerHeight } = containerDimensions.current;
-    if (currentContainerWidth === 0 || currentContainerHeight === 0) {
-      console.error("[useUnitAnimations] CRITICAL: Game area dimensions zero. Cannot place arrow.");
-      // Call onComplete immediately as the attack "resolves" instantly if no visual can be shown
-      onComplete(target.id, units, owner);
-      return;
-    }
+    // Versuchen, die Dimensionen zu aktualisieren, falls sie noch nicht gesetzt sind
+    const updateAndCheckDimensions = () => {
+      // Aktualisieren der Dimensionen
+      const container = document.querySelector('.game-area');
+      if (container) {
+        containerDimensions.current = { width: container.clientWidth, height: container.clientHeight };
+        console.log('[useUnitAnimations] Force-updated dimensions:', containerDimensions.current);
+      }
+      
+      // Get current container dimensions
+      const { width: currentContainerWidth, height: currentContainerHeight } = containerDimensions.current;
+      if (currentContainerWidth === 0 || currentContainerHeight === 0) {
+        console.error("[useUnitAnimations] CRITICAL: Game area dimensions zero. Cannot place arrow. Will retry...");
+        // Retry logic - we'll try a few times
+        retry();
+        return false;
+      }
+      return true;
+    };
     
-    // Get building center positions
-    const sourceCenter = getBuildingCenter(source, currentContainerWidth, currentContainerHeight);
-    const targetCenter = getBuildingCenter(target, currentContainerWidth, currentContainerHeight);
-    if (!sourceCenter || !targetCenter) {
-      console.error("[useUnitAnimations] CRITICAL: Failed to get center for source/target for arrow.");
-      onComplete(target.id, units, owner);
-      return;
-    }
-
-    // Calculate distance and animation duration
-    const deltaX = targetCenter.x - sourceCenter.x;
-    const deltaY = targetCenter.y - sourceCenter.y;
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    // Retry logic
+    let retryCount = 0;
+    const maxRetries = 3;
     
-    // Calculate animation duration based on distance (4-8 seconds)
-    const baseDuration = 4000; // 4 seconds base
-    const maxAdditionalDuration = 4000; // Up to 4 extra seconds
-    const distanceFactor = Math.min(1, distance / 500); // Normalize distance (can adjust this based on game scale)
-    const animationDuration = baseDuration + (distanceFactor * maxAdditionalDuration);
+    const retry = () => {
+      if (retryCount < maxRetries) {
+        retryCount++;
+        console.log(`[useUnitAnimations] Retry attempt ${retryCount}/${maxRetries}...`);
+        setTimeout(() => createAnimation(), 200 * retryCount);
+      } else {
+        console.error("[useUnitAnimations] Max retries reached. Completing without animation.");
+        onComplete(target.id, units, owner);
+      }
+    };
     
-    // Create unique animation ID
-    const animId = `arrow_${performance.now().toFixed(0)}_${Math.random().toString(16).slice(2, 8)}`;
-    animationCallbacks.current.set(animId, onComplete);
+    // Create the actual animation
+    const createAnimation = () => {
+      // Check dimensions first
+      if (!updateAndCheckDimensions()) {
+        return; // Will retry via the updateAndCheckDimensions function
+      }
+      
+      // Get current container dimensions (now confirmed valid)
+      const { width: currentContainerWidth, height: currentContainerHeight } = containerDimensions.current;
+      
+      // Get building center positions
+      const sourceCenter = getBuildingCenter(source, currentContainerWidth, currentContainerHeight);
+      const targetCenter = getBuildingCenter(target, currentContainerWidth, currentContainerHeight);
+      if (!sourceCenter || !targetCenter) {
+        console.error("[useUnitAnimations] CRITICAL: Failed to get center for source/target for arrow.");
+        onComplete(target.id, units, owner);
+        return;
+      }
 
-    // Highlight source and target buildings
-    setHighlightedSourceId(source.id);
-    setHighlightedTargetId(target.id);
+      // Calculate distance and animation duration
+      const deltaX = targetCenter.x - sourceCenter.x;
+      const deltaY = targetCenter.y - sourceCenter.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      
+      // Calculate animation duration based on distance (4-8 seconds)
+      const baseDuration = 4000; // 4 seconds base
+      const maxAdditionalDuration = 4000; // Up to 4 extra seconds
+      const distanceFactor = Math.min(1, distance / 500); // Normalize distance (can adjust this based on game scale)
+      const animationDuration = baseDuration + (distanceFactor * maxAdditionalDuration);
+      
+      // Create unique animation ID
+      const animId = `arrow_${performance.now().toFixed(0)}_${Math.random().toString(16).slice(2, 8)}`;
+      animationCallbacks.current.set(animId, onComplete);
 
-    // Add the new arrow animation
-    setActiveArrows(prev => {
-      const newArrowData: ArrowAnimationData = {
-        id: animId, 
-        sourceId: source.id, 
-        targetId: target.id, 
-        units, 
-        owner,
-        x: sourceCenter.x, 
-        y: sourceCenter.y, 
-        targetX: targetCenter.x, 
-        targetY: targetCenter.y,
-        progress: 0,
-        distance,
-        startTime: performance.now(), 
-        duration: animationDuration,
-      };
-      console.log('[useUnitAnimations] Adding new arrow data:', newArrowData);
-      return [...prev, newArrowData];
-    });
+      // Highlight source and target buildings
+      setHighlightedSourceId(source.id);
+      setHighlightedTargetId(target.id);
+
+      // Add the new arrow animation
+      setActiveArrows(prev => {
+        const newArrowData: ArrowAnimationData = {
+          id: animId, 
+          sourceId: source.id, 
+          targetId: target.id, 
+          units, 
+          owner,
+          x: sourceCenter.x, 
+          y: sourceCenter.y, 
+          targetX: targetCenter.x, 
+          targetY: targetCenter.y,
+          progress: 0,
+          distance,
+          startTime: performance.now(), 
+          duration: animationDuration,
+        };
+        console.log('[useUnitAnimations] Adding new arrow data:', newArrowData);
+        return [...prev, newArrowData];
+      });
+    };
+    
+    // Start the initial animation attempt
+    createAnimation();
   }, []);
 
   return (

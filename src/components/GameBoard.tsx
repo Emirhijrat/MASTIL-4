@@ -62,6 +62,21 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
     onExit = () => {}
   } = props;
   
+  // Determine selected building
+  const selectedBuilding = selectedBuildingId 
+    ? buildings.find(b => b.id === selectedBuildingId) 
+    : undefined;
+  
+  // Calculate upgrade cost if there's a selected building
+  const upgradeCost = selectedBuilding ? getUpgradeCost(selectedBuilding) : 0;
+  
+  // Determine if upgrade is possible
+  const canUpgrade = selectedBuilding 
+    ? selectedBuilding.owner === 'player' && 
+      selectedBuilding.level < MAX_BUILDING_LEVEL && 
+      selectedBuilding.units >= upgradeCost
+    : false;
+  
   // Create a simple player object for the StatusBar
   const player = {
     gold: buildings.filter(b => b.owner === 'player').reduce((sum, b) => sum + b.units, 0),
@@ -70,6 +85,13 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
   
   // Placeholder for units in production (can be enhanced later)
   const unitsInProduction = {};
+
+  // Handle upgrade action
+  const onUpgradeClick = () => {
+    if (selectedBuilding && canUpgrade) {
+      handleUpgrade(selectedBuilding);
+    }
+  };
 
   // Comprehensive building data logging
   console.log('[GameBoard] buildings type:', typeof buildings);
@@ -156,8 +178,13 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
             onExit={onExit}
           />
           
-          {/* Control bar */}
-          <ControlBar />
+          {/* Upgraded Control bar */}
+          <ControlBar 
+            selectedBuilding={selectedBuilding}
+            upgradeCost={upgradeCost}
+            canUpgrade={canUpgrade}
+            onUpgrade={onUpgradeClick}
+          />
         </div>
       </div>
     </ErrorBoundary>
