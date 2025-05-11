@@ -5,7 +5,7 @@ import { useAudio } from './useAudio';
 import { handleAIEvent, getRandomMessage, makeAIDecision } from '../ai/enemyAI';
 import { useBuildingManagement } from './useBuildingManagement';
 import { useNeutralBehavior } from './useNeutralBehavior';
-import { useGameCommentary } from './useGameCommentary';
+import useGameCommentary from './useGameCommentary';
 
 export function useGameState(config: GameConfig) {
   // Player state

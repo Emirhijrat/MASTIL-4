@@ -36,16 +36,18 @@ const handleGlobalError = (error: Error, errorInfo: React.ErrorInfo) => {
   // logErrorToService(formattedError);
 };
 
-type GameScreen = 'loading' | 'start' | 'playerSetup' | 'gameplay' | 'credits' | 'settings';
+// Define game view types
+type GameScreen = 'start' | 'loading' | 'playerSetup' | 'gameplay' | 'credits' | 'settings';
 
 function App() {
   console.log('=== APP RENDER START ===');
   console.log('App.tsx rendering - initializing component');
   
   const { theme } = useTheme();
-  const [isAppLoading, setIsAppLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [currentScreen, setCurrentScreen] = useState<GameScreen>('loading');
+  
+  // Game State Management - centralized view controller
+  const [currentScreen, setCurrentScreen] = useState<GameScreen>('start');
   
   // Default settings
   const [gameSettings, setGameSettings] = useState({
@@ -79,9 +81,14 @@ function App() {
     forceComment
   } = useGameState(gameConfig);
 
-  // Handle start screen actions
+  // Handle Start Game - transition through loading to player setup
   const handleStartGame = () => {
-    setCurrentScreen('playerSetup');
+    setCurrentScreen('loading');
+    
+    // Simulate loading and transition to player setup after delay
+    setTimeout(() => {
+      setCurrentScreen('playerSetup');
+    }, 1500); // 1.5 seconds loading screen
   };
 
   const handleShowCredits = () => {
@@ -102,7 +109,7 @@ function App() {
     console.log('Settings saved:', settings);
   };
 
-  // Initial loading
+  // Apply theme
   useEffect(() => {
     try {
       document.documentElement.classList.remove('theme-light', 'theme-dark');
@@ -112,14 +119,6 @@ function App() {
       setError(err instanceof Error ? err : new Error('Unknown theme error'));
     }
   }, [theme]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsAppLoading(false);
-      setCurrentScreen('start');
-    }, 2000); // Reduced to 2 seconds for testing
-    return () => clearTimeout(timer);
-  }, []);
 
   // Logging for debugging
   useEffect(() => {
@@ -149,15 +148,7 @@ function App() {
     );
   }
 
-  // Handle different screens
-  if (isAppLoading || currentScreen === 'loading') {
-    return (
-      <ErrorBoundary onError={handleGlobalError}>
-        <LoadingScreen />
-      </ErrorBoundary>
-    );
-  }
-
+  // Handle different screens based on the currentScreen state
   if (currentScreen === 'start') {
     return (
       <ErrorBoundary onError={handleGlobalError}>
@@ -166,6 +157,14 @@ function App() {
           onShowCredits={handleShowCredits}
           onShowSettings={handleShowSettings}
         />
+      </ErrorBoundary>
+    );
+  }
+
+  if (currentScreen === 'loading') {
+    return (
+      <ErrorBoundary onError={handleGlobalError}>
+        <LoadingScreen message="wird gestartet..." />
       </ErrorBoundary>
     );
   }
@@ -193,7 +192,7 @@ function App() {
     );
   }
 
-  if (currentScreen === 'playerSetup' || showPlayerInputPopup) {
+  if (currentScreen === 'playerSetup') {
     return (
       <ErrorBoundary onError={handleGlobalError}>
         <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
@@ -208,7 +207,7 @@ function App() {
     );
   }
   
-  // Main gameplay screen
+  // Main gameplay screen (currentScreen === 'gameplay')
   return (
     <ErrorBoundary onError={handleGlobalError}>
       <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
@@ -237,6 +236,7 @@ function App() {
             onTogglePause={togglePause}
             onBackToMainMenu={() => {
               if (window.confirm('Zurück zum Hauptmenü? Fortschritt geht verloren.')) {
+                restartGame();
                 setCurrentScreen('start');
               }
             }}
@@ -265,6 +265,7 @@ function App() {
             isPaused={isPaused} 
             onResume={togglePause}
             onBackToMainMenu={() => {
+              restartGame();
               setCurrentScreen('start');
             }}
           />
