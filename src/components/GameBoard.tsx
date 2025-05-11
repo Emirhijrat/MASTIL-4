@@ -15,7 +15,7 @@ import MessageBox from './MessageBox';
 import SettingsPanel from './SettingsPanel';
 import DebugOverlay from './DebugOverlay';
 import ErrorBoundary from './ErrorBoundary';
-import Building from './Building';
+import BuildingComponent from './Building';
 import ControlBar from './ControlBar';
 import GameControls from './GameControls';
 
@@ -110,7 +110,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
         {/* Buildings */}
         <div className="buildings absolute inset-0 pointer-events-none">
           {buildings.map(building => (
-            <Building
+            <BuildingComponent
               key={building.id}
               building={building}
               selected={selectedBuildingId === building.id}
