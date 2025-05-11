@@ -198,8 +198,24 @@ function App() {
         <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
           <PlayerNameInputPopup 
             onSubmit={(name, element) => {
+              console.log('[App] Player setup form submitted with name:', name, 'element:', element);
               handlePlayerSetup(name, element);
-              setCurrentScreen('gameplay');
+              
+              // Wait briefly to ensure buildings state is updated before changing screens
+              setTimeout(() => {
+                console.log('[App] Checking buildings before screen change:', buildings.length);
+                if (buildings.length > 0) {
+                  console.log('[App] Buildings initialized successfully, changing to gameplay screen');
+                  setCurrentScreen('gameplay');
+                } else {
+                  console.error('[App] Buildings not initialized properly, retrying...');
+                  // Try again after a longer delay
+                  setTimeout(() => {
+                    console.log('[App] Retrying screen change, buildings:', buildings.length);
+                    setCurrentScreen('gameplay');
+                  }, 1000);
+                }
+              }, 500);
             }} 
           />
         </div>
