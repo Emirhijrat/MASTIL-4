@@ -203,21 +203,32 @@ function App() {
               // Setzen wir den Bildschirm zuerst auf 'loading'
               setCurrentScreen('loading');
               
-              // Führe handlePlayerSetup aus und nutze einen zuverlässigeren Ansatz zum Überprüfen der Gebäude
-              handlePlayerSetup(name, element);
+              // Führe handlePlayerSetup aus
+              const success = handlePlayerSetup(name, element);
+              console.log('[App] handlePlayerSetup returned:', success);
               
               // Funktion zum Überprüfen, ob die Gebäude initialisiert wurden
+              let attempts = 0;
+              const maxAttempts = 10;
+              
               const checkBuildingsInitialized = () => {
-                console.log('[App] Checking buildings initialization:', buildings.length);
+                attempts++;
+                console.log(`[App] Checking buildings initialization (attempt ${attempts}/${maxAttempts}):`, buildings.length);
                 
                 if (buildings.length > 0) {
                   // Gebäude wurden initialisiert, wechseln zum Gameplay-Bildschirm
                   console.log('[App] Buildings initialized successfully, changing to gameplay screen');
                   setCurrentScreen('gameplay');
-                } else {
+                } else if (attempts < maxAttempts) {
                   // Gebäude wurden noch nicht initialisiert, erneut versuchen
                   console.warn('[App] Buildings not initialized properly, retrying...');
                   setTimeout(checkBuildingsInitialized, 500);
+                } else {
+                  // Maximale Anzahl von Versuchen erreicht, Neustart des Spiels
+                  console.error('[App] Max initialization attempts reached, restarting game');
+                  alert('Fehler bei der Spielinitialisierung. Das Spiel wird neu gestartet.');
+                  restartGame();
+                  setCurrentScreen('start');
                 }
               };
               

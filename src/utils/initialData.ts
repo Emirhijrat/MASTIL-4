@@ -1,5 +1,8 @@
 import { Building, OwnerType } from '../types/gameTypes';
 
+// Debug-Log zur Laufzeit
+console.log('[initialData.ts] Modul wird geladen...');
+
 // Define the raw data type
 type RawBuildingData = [
   string, // id
@@ -21,6 +24,12 @@ export const initialBuildingData: RawBuildingData[] = [
   ['b4', 'neutral', 15, 1, { x: 0.80, y: 0.80 }], // Bottom right
   ['b5', 'neutral', 20, 1, { x: 0.50, y: 0.50 }], // Center
 ];
+
+// Direkter Validierungscheck, um Fehler früh zu erkennen
+if (!initialBuildingData || !Array.isArray(initialBuildingData) || initialBuildingData.length === 0) {
+  console.error('[initialData.ts] CRITICAL ERROR: initialBuildingData ist nicht korrekt definiert:', initialBuildingData);
+  throw new Error('initialBuildingData ist nicht korrekt definiert');
+}
 
 console.log('=== INITIAL DATA VERIFICATION ===');
 console.log('[initialData.ts] Raw initialBuildingData array:', initialBuildingData);
@@ -78,7 +87,20 @@ export const mapInitialDataToBuildings = (data: RawBuildingData[]): Building[] =
   }
 };
 
-export const initialBuildings = mapInitialDataToBuildings(initialBuildingData);
+// Erstelle und exportiere die initialBuildings mit detaillierter Validierung
+export const initialBuildings = (() => {
+  console.log('[initialData.ts] Initialisiere initialBuildings...');
+  const buildings = mapInitialDataToBuildings(initialBuildingData);
+  
+  if (!buildings || !Array.isArray(buildings) || buildings.length === 0) {
+    console.error('[initialData.ts] CRITICAL ERROR: initialBuildings konnte nicht korrekt erstellt werden:', buildings);
+    throw new Error('initialBuildings konnte nicht korrekt erstellt werden');
+  }
+  
+  console.log('[initialData.ts] initialBuildings erfolgreich erstellt mit', buildings.length, 'Gebäuden');
+  return buildings;
+})();
+
 console.log('[initialData.ts] Final initialBuildings array:', initialBuildings);
 console.log('[initialData.ts] Mapped buildings summary:', initialBuildings.map(b => ({
   id: b.id,

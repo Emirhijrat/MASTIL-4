@@ -2,6 +2,12 @@ import { useState, useCallback } from 'react';
 import { Building, GameConfig, OwnerType, ElementType } from '../types/gameTypes';
 import { initialBuildingData } from '../utils/initialData';
 
+// Debug-Log nach dem Import
+console.log('[DEBUG] useBuildingManagement - initialBuildingData beim Import:', 
+  initialBuildingData ? 
+  `Array with ${initialBuildingData.length} items` : 
+  'NOT DEFINED!');
+
 export function useBuildingManagement(config: GameConfig) {
   const [buildings, setBuildings] = useState<Building[]>([]);
 
@@ -108,6 +114,9 @@ export function useBuildingManagement(config: GameConfig) {
       console.log('[useBuildingManagement] initializeBuildings called with:', { playerElement, aiElement });
       console.log('[useBuildingManagement] Current buildings state:', buildings);
       
+      // Erneuter Check der initialBuildingData zum Zeitpunkt der Funktion
+      console.log('[DEBUG] initialBuildingData vorhanden?', initialBuildingData ? `JA (${initialBuildingData.length} Einträge)` : 'NEIN');
+      
       if (!initialBuildingData || !Array.isArray(initialBuildingData)) {
         console.error('[useBuildingManagement] ERROR: Invalid initialBuildingData:', initialBuildingData);
         throw new Error('Invalid building initialization data');
@@ -115,7 +124,11 @@ export function useBuildingManagement(config: GameConfig) {
       
       console.log('[useBuildingManagement] initialBuildingData length:', initialBuildingData.length);
       
-      const newBuildings = initialBuildingData.map((item, index) => {
+      // Deep clone the initialBuildingData to avoid reference issues
+      const dataCopy = JSON.parse(JSON.stringify(initialBuildingData));
+      console.log('[DEBUG] dataCopy created:', dataCopy.length);
+      
+      const newBuildings = dataCopy.map((item, index) => {
         if (!item || !Array.isArray(item) || item.length < 5) {
           console.error(`[useBuildingManagement] ERROR: Invalid building data item at index ${index}:`, item);
           throw new Error('Invalid building data item');
@@ -161,7 +174,7 @@ export function useBuildingManagement(config: GameConfig) {
       console.error('[useBuildingManagement] ERROR initializing buildings:', error);
       return false;
     }
-  }, [config.maxUnitsPerBuilding]);
+  }, [config.maxUnitsPerBuilding, buildings]);
   
   // Generate units for player and enemy buildings
   const setupBuildingUnitGeneration = useCallback((

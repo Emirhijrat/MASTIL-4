@@ -251,11 +251,20 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       console.log('[useGameState] About to call initializeBuildings with:', { element, assignedAiElement });
       const success = initializeBuildings(element, assignedAiElement);
       
-      // Log the buildings array after initialization
-      console.log('[handlePlayerSetup] Mapped newBuildings PRE-SET:', JSON.stringify(buildings.map(b => ({ id: b.id, owner: b.owner, units: b.units }))));
-      console.log('[handlePlayerSetup] Calling setBuildings with newBuildings.');
+      // Überprüfen, ob die Initialisierung erfolgreich war, und nochmals in die Konsole ausgeben
+      console.log('[useGameState] initializeBuildings result:', success, 'current buildings length:', buildings.length);
       
-      console.log('[useGameState] initializeBuildings result:', success);
+      // Failsafe: Wenn keine Gebäude initialisiert wurden, trotz "success" = true, erneut versuchen
+      if (success && buildings.length === 0) {
+        console.warn('[useGameState] Buildings array is empty despite successful initialization, retrying...');
+        
+        // Verzögerte zweite Initialisierung
+        setTimeout(() => {
+          console.log('[useGameState] Retry initialization with:', { element, assignedAiElement });
+          const retrySuccess = initializeBuildings(element, assignedAiElement);
+          console.log('[useGameState] Retry initializeBuildings result:', retrySuccess, 'buildings after retry:', buildings.length);
+        }, 500);
+      }
       
       // Store game start time
       localStorage.setItem('gameStartTime', Date.now().toString());
@@ -268,11 +277,12 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       showMessage(`Majestät ${name}, mögen Eure ${element}-Kräfte den Feind bezwingen!`);
       
       console.log('=== PLAYER SETUP COMPLETE ===');
+      return success;
     } catch (error) {
       console.error('[useGameState] ERROR in handlePlayerSetup:', error);
-      throw error;
+      return false;
     }
-  }, [initializeBuildings, showMessage]);
+  }, [initializeBuildings, showMessage, buildings.length]);
 
   // Building selection logic
   const selectBuilding = useCallback((buildingId: string) => {
@@ -450,6 +460,47 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
     console.log('[useGameState] Attempting to call initializeGame/handlePlayerSetup.');
     // Other code in this useEffect if it exists
   }, []);
+
+  const handleAutoUpgrade = useCallback(() => {
+    // Auto-Upgrade für Gebäude, die ausreichend Ressourcen haben
+    if (showPlayerInputPopup) return;
+    
+    setBuildings(prevBuildings => {
+      let modified = false;
+      const newBuildings = prevBuildings.map(building => {
+        // Nur Spielergebäude mit Level < 5 berücksichtigen
+        if (building.owner === 'player' && building.level < 5) {
+          const cost = calculateUpgradeCost(building);
+          // Wenn Gebäude genug Einheiten hat und 90% der maximalen Kapazität erreicht hat
+          if (building.units >= cost && building.units >= building.maxUnits * 0.9) {
+            showMessage(`Building ${building.id} auto-upgraded to level ${building.level + 1}!`);
+            modified = true;
+            return { 
+              ...building, 
+              units: building.units - cost, 
+              level: building.level + 1, 
+              maxUnits: config.maxUnitsPerBuilding + (building.level * 20) 
+            };
+          }
+        }
+        return building;
+      });
+      
+      return modified ? newBuildings : prevBuildings;
+    });
+  }, [calculateUpgradeCost, config.maxUnitsPerBuilding, showMessage, showPlayerInputPopup]);
+
+  // Füge einen neuen useEffect hinzu, der die Auto-Upgrade-Funktion aufruft
+  useEffect(() => {
+    // Prüfe alle 30 Sekunden, ob Gebäude automatisch aufgewertet werden können
+    if (gameOver || showPlayerInputPopup) return;
+    
+    const autoUpgradeInterval = setInterval(() => {
+      handleAutoUpgrade();
+    }, 30000); // 30 Sekunden
+    
+    return () => clearInterval(autoUpgradeInterval);
+  }, [gameOver, handleAutoUpgrade, showPlayerInputPopup]);
 
   return {
     buildings, 
