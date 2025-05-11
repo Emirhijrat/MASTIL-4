@@ -7,7 +7,7 @@ type UseNeutralBehaviorProps = {
   setBuildings: React.Dispatch<React.SetStateAction<Building[]>>;
   gameOver: boolean;
   showPlayerInputPopup: boolean;
-  showMessage: (message: string) => void;
+  showMessage: (message: string, speaker?: string, speakerColor?: string) => void;
   config: GameConfig;
   startUnitAnimation: (
     source: Building, 
@@ -18,6 +18,14 @@ type UseNeutralBehaviorProps = {
   ) => void;
   handleUnitsArrival: (targetId: string, numUnits: number, attackerOwner: string) => void;
   isPaused: boolean;
+  canDisplayMessage?: (priority?: 'high' | 'medium' | 'low') => boolean;
+  displayMessage?: (
+    text: string, 
+    speakerType?: 'enemy' | 'neutral' | 'system' | 'event',
+    priority?: 'high' | 'medium' | 'low',
+    speaker?: string,
+    speakerColor?: string
+  ) => boolean;
 };
 
 export function useNeutralBehavior({
@@ -29,7 +37,9 @@ export function useNeutralBehavior({
   config,
   startUnitAnimation,
   handleUnitsArrival,
-  isPaused
+  isPaused,
+  canDisplayMessage,
+  displayMessage
 }: UseNeutralBehaviorProps) {
   // State for neutral behavior
   const [lastNeutralUpgrade, setLastNeutralUpgrade] = useState(Date.now());
@@ -124,9 +134,21 @@ export function useNeutralBehavior({
         const now = Date.now();
         if (now - lastNeutralIdleChatter >= 30000) { // 30 second cooldown
           const neutralBuildings = buildings.filter(b => b.owner === 'neutral');
+          
           if (neutralBuildings.length > 0 && Math.random() < 0.2) { // 20% chance
-            showMessage(getRandomMessage('neutral_idle_chatter'));
-            setLastNeutralIdleChatter(now);
+            if (displayMessage && canDisplayMessage) {
+              if (canDisplayMessage('low')) {
+                const message = getRandomMessage('neutral_idle_chatter');
+                const displayed = displayMessage(message, 'neutral', 'low');
+                
+                if (displayed) {
+                  setLastNeutralIdleChatter(now);
+                }
+              }
+            } else {
+              showMessage(getRandomMessage('neutral_idle_chatter'));
+              setLastNeutralIdleChatter(now);
+            }
           }
         }
       }
@@ -139,7 +161,9 @@ export function useNeutralBehavior({
     showPlayerInputPopup, 
     lastNeutralIdleChatter, 
     showMessage,
-    isPaused
+    isPaused,
+    displayMessage,
+    canDisplayMessage
   ]);
 
   // Neutral support between buildings
@@ -174,9 +198,19 @@ export function useNeutralBehavior({
             if (unitsToSend > 0) {
               console.log(`[Neutral] Sending ${unitsToSend} units from ${sourceBuilding.id} to ${targetBuilding.id}`);
               
-              // Show support message
-              showMessage(getRandomMessage('neutral_support_action'));
-              setLastNeutralSupportMessage(now);
+              if (displayMessage && canDisplayMessage) {
+                if (canDisplayMessage('medium')) {
+                  displayMessage(
+                    getRandomMessage('neutral_support_action'),
+                    'neutral',
+                    'medium'
+                  );
+                  setLastNeutralSupportMessage(now);
+                }
+              } else {
+                showMessage(getRandomMessage('neutral_support_action'));
+                setLastNeutralSupportMessage(now);
+              }
               
               startUnitAnimation(sourceBuilding, targetBuilding, unitsToSend, 'neutral', (targetId, units, attackerOwner) => {
                 handleUnitsArrival(targetId, units, attackerOwner);
@@ -204,7 +238,9 @@ export function useNeutralBehavior({
     showMessage, 
     handleUnitsArrival,
     setBuildings,
-    isPaused
+    isPaused,
+    displayMessage,
+    canDisplayMessage
   ]);
 
   return {

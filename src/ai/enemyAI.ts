@@ -259,7 +259,14 @@ const findAISourceBuildingForAttack = (aiBuildings: Building[], minAttackThresho
 // Enhanced AI decision making
 const makeAIDecision = (
   buildings: Building[],
-  showMessage: (message: string) => void
+  showMessage: (message: string, speaker?: string, speakerColor?: string) => void,
+  displayMessage?: (
+    text: string, 
+    speakerType?: 'enemy' | 'neutral' | 'system' | 'event',
+    priority?: 'high' | 'medium' | 'low',
+    speaker?: string,
+    speakerColor?: string
+  ) => boolean
 ): { type: 'attack', source: Building, target: Building } | { type: 'upgrade', target: Building } | { type: 'idle' } => {
   console.log('[AI makeAIDecision] --------- AI Turn Start ---------');
   console.log('[AI makeAIDecision] Current strategy:', state.currentStrategy);
@@ -317,21 +324,59 @@ const makeAIDecision = (
 
   if (attackConditionMet) {
     console.log(`[AI] Attacking from ${sourceBuilding.id} to ${targetBuilding.id} (Strategy: ${state.currentStrategy})`);
-    showMessage(getRandomMessage(targetBuilding.owner === 'player' ? 'taunt' : 'neutral'));
+    
+    // Display message using new system if available
+    if (displayMessage) {
+      const message = getRandomMessage(targetBuilding.owner === 'player' ? 'taunt' : 'neutral');
+      const speakerType = 'enemy';
+      displayMessage(message, speakerType, 'medium', 'Feindlicher Kommandant', '#9D202F');
+    } else {
+      showMessage(getRandomMessage(targetBuilding.owner === 'player' ? 'taunt' : 'neutral'));
+    }
+    
     return { type: 'attack', source: sourceBuilding, target: targetBuilding };
   }
 
   return { type: 'idle' };
 };
 
+// AI event handler with improved commentary support
 const handleAIEvent = (
   eventType: 'conquest' | 'loss' | 'neutral',
-  showMessage: (message: string) => void
+  showMessage: (message: string, speaker?: string, speakerColor?: string) => void,
+  displayMessage?: (
+    text: string, 
+    speakerType?: 'enemy' | 'neutral' | 'system' | 'event',
+    priority?: 'high' | 'medium' | 'low',
+    speaker?: string,
+    speakerColor?: string
+  ) => boolean
 ): void => {
   const now = Date.now();
-  if (now - state.lastMessage < state.messageTimeout) return;
-  showMessage(getRandomMessage(eventType));
+  
+  if (now - state.lastMessage < state.messageTimeout) {
+    return;
+  }
+  
+  const message = getRandomMessage(eventType);
+  
+  // Use the new displayMessage function if available
+  if (displayMessage) {
+    const speakerType = eventType === 'loss' || eventType === 'conquest' ? 'enemy' : 'neutral';
+    const priority = eventType === 'loss' ? 'high' : 'medium';
+    
+    displayMessage(message, speakerType, priority, 
+      eventType === 'loss' || eventType === 'conquest' ? 'Feindlicher Kommandant' : undefined,
+      eventType === 'loss' || eventType === 'conquest' ? '#9D202F' : undefined
+    );
+  } else {
+    // Fall back to the original showMessage
+    showMessage(message);
+  }
+  
   state.lastMessage = now;
+  // Vary the message timeout
+  state.messageTimeout = 3000 + Math.random() * 2000;
 };
 
 export { makeAIDecision, handleAIEvent, getRandomMessage };

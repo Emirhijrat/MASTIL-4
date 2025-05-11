@@ -105,7 +105,7 @@ export function useGameState(config: GameConfig) {
   }, []);
   
   // Initialize the commentary system
-  const { forceComment } = useGameCommentary({
+  const { forceComment, canDisplayMessage, displayMessage } = useGameCommentary({
     isGameActive: !showPlayerInputPopup && !gameOver,
     isPaused,
     playerBuildingCount: buildings.filter(b => b.owner === 'player').length,
@@ -130,7 +130,10 @@ export function useGameState(config: GameConfig) {
     const prevOwner = targetBuilding.owner;
     
     // Update building via base function
-    handleUnitsArrivalBase(targetId, numUnits, attackerOwner, showMessage, handleAIEvent);
+    handleUnitsArrivalBase(targetId, numUnits, attackerOwner, showMessage, 
+      // Pass the displayMessage function to handleAIEvent
+      (eventType, showMsg) => handleAIEvent(eventType, showMsg, displayMessage)
+    );
     
     // Track ownership changes for commentary
     if (prevOwner !== attackerOwner) {
@@ -145,7 +148,7 @@ export function useGameState(config: GameConfig) {
         setGameEvents(prev => ({ ...prev, enemyCapturedBuilding: true }));
       }
     }
-  }, [buildings, handleUnitsArrivalBase, showMessage]);
+  }, [buildings, handleUnitsArrivalBase, showMessage, displayMessage]);
 
   // Send units from one building to another
   const sendUnits = useCallback((source: Building, target: Building) => {
@@ -298,7 +301,7 @@ export function useGameState(config: GameConfig) {
     }
   }, [showPlayerInputPopup, gameOver, isPaused, showMessage]);
 
-  // Set up neutral behavior - pass isPaused flag
+  // Set up neutral behavior - pass isPaused flag and commentary functions
   useNeutralBehavior({
     buildings,
     setBuildings,
@@ -308,7 +311,9 @@ export function useGameState(config: GameConfig) {
     config,
     startUnitAnimation,
     handleUnitsArrival,
-    isPaused
+    isPaused,
+    canDisplayMessage,
+    displayMessage
   });
 
   // Setup building unit generation for player and enemy
