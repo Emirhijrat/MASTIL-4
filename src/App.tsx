@@ -199,23 +199,30 @@ function App() {
           <PlayerNameInputPopup 
             onSubmit={(name, element) => {
               console.log('[App] Player setup form submitted with name:', name, 'element:', element);
+              
+              // Setzen wir den Bildschirm zuerst auf 'loading'
+              setCurrentScreen('loading');
+              
+              // Führe handlePlayerSetup aus und nutze einen zuverlässigeren Ansatz zum Überprüfen der Gebäude
               handlePlayerSetup(name, element);
               
-              // Wait briefly to ensure buildings state is updated before changing screens
-              setTimeout(() => {
-                console.log('[App] Checking buildings before screen change:', buildings.length);
+              // Funktion zum Überprüfen, ob die Gebäude initialisiert wurden
+              const checkBuildingsInitialized = () => {
+                console.log('[App] Checking buildings initialization:', buildings.length);
+                
                 if (buildings.length > 0) {
+                  // Gebäude wurden initialisiert, wechseln zum Gameplay-Bildschirm
                   console.log('[App] Buildings initialized successfully, changing to gameplay screen');
                   setCurrentScreen('gameplay');
                 } else {
-                  console.error('[App] Buildings not initialized properly, retrying...');
-                  // Try again after a longer delay
-                  setTimeout(() => {
-                    console.log('[App] Retrying screen change, buildings:', buildings.length);
-                    setCurrentScreen('gameplay');
-                  }, 1000);
+                  // Gebäude wurden noch nicht initialisiert, erneut versuchen
+                  console.warn('[App] Buildings not initialized properly, retrying...');
+                  setTimeout(checkBuildingsInitialized, 500);
                 }
-              }, 500);
+              };
+              
+              // Warten Sie eine Weile und starten Sie dann die Überprüfung
+              setTimeout(checkBuildingsInitialized, 500);
             }} 
           />
         </div>

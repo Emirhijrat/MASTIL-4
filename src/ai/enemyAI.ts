@@ -59,6 +59,24 @@ const AI_MESSAGES = {
     "Du kannst mich nicht aufhalten! 💫",
     "Deine Züge sind vorhersehbar! 🎯",
   ],
+  // Neue Kategorie für feindliche Gebäude-Kommentare
+  enemy_idle_chatter: [
+    "Wir werden euch vernichten!",
+    "Deine Zeit ist bald abgelaufen.",
+    "Unsere Truppen stehen bereit.",
+    "Wir sind überlegen.",
+    "Schwächlinge wie du sind leichte Beute.",
+    "Heute ist ein guter Tag zum Erobern.",
+    "Ihr könnt uns nicht besiegen!",
+    "Deine Taktik ist lächerlich.",
+    "Bald werdet ihr alle uns gehören.",
+    "Unsere Macht wächst mit jedem Tag.",
+    "Widerstand ist zwecklos.",
+    "Die Eroberung wird fortgesetzt.",
+    "Wir sind die Herrscher dieses Landes.",
+    "Verbeugt euch vor euren neuen Meistern!",
+    "Niemand kann uns aufhalten."
+  ],
   neutral_idle_chatter: [
     "Der schön. Hoffentlich gibt es keinen Sturm.",
     "Wir sind nur einfache Siedler/Bewohner.",

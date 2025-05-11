@@ -62,6 +62,15 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
     }
   };
 
+  // Get color class based on owner
+  const getOwnerColorClass = () => {
+    switch (building.owner) {
+      case 'player': return 'bg-blue-900 text-white';
+      case 'enemy': return 'bg-red-900 text-white';
+      default: return 'bg-gray-800 text-white';
+    }
+  };
+
   return (
     <div 
       ref={ref}
@@ -81,22 +90,26 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
         </div>
       )}
       
-      {/* Unit count badge */}
-      <div className="unit-count">
-        {building.units}
+      {/* Building stats indicators */}
+      <div className="absolute top-[-28px] left-[-10px] flex flex-col items-start gap-1 z-20">
+        {/* Units counter */}
+        <div className={`rounded-full w-10 h-10 flex items-center justify-center 
+                      text-lg font-bold shadow-lg border border-gray-700 ${getOwnerColorClass()}`}>
+          {building.units}
+        </div>
+        
+        {/* Level indicator */}
+        <div className="bg-black/70 px-2 py-0.5 text-xs rounded-full text-white font-semibold shadow">
+          Lvl {building.level}
+        </div>
       </div>
 
       {/* Building icon */}
       <img 
         src={getImageSrc()}
         alt={`${building.owner} building`}
-        className="building-image"
+        className="building-image w-[56px] h-[56px] object-contain"
       />
-
-      {/* Level indicator */}
-      <div className="level-indicator">
-        Lvl {building.level}
-      </div>
       
       {/* Production indicator for player buildings */}
       {unitsInProduction > 0 && building.owner === 'player' && (
