@@ -2,9 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Building as BuildingType } from '../types/gameTypes';
 import BuildingComponent from './Building';
 import UnitAnimation from './UnitAnimation';
-
-// Define the background image URL as a constant
-const BACKGROUND_URL = 'https://iili.io/3vhdSja.png';
+import { GameAssets } from '../assets/assetManager';
 
 interface MapProps {
   buildings: BuildingType[];
@@ -16,7 +14,7 @@ interface MapProps {
 }
 
 const Map: React.FC<MapProps> = ({ 
-  buildings = [], // Default to empty array if buildings is undefined
+  buildings = [],
   selectedBuildingId, 
   onBuildingClick,
   getUpgradeCost,
@@ -32,6 +30,7 @@ const Map: React.FC<MapProps> = ({
 
   useEffect(() => {
     console.log('[Map] Map component mounted or updated');
+    console.log('[Map] buildings in useEffect:', buildings?.length || 0);
     
     if (containerRef.current) {
       const updateDimensions = () => {
@@ -42,27 +41,29 @@ const Map: React.FC<MapProps> = ({
       };
 
       updateDimensions();
+      console.log('[Map] Dimensions updated:', dimensions);
       window.addEventListener('resize', updateDimensions);
       return () => window.removeEventListener('resize', updateDimensions);
     }
-  }, []);
+  }, [buildings, dimensions]);
 
-  // Make sure buildings is a valid array
-  const validBuildings = Array.isArray(buildings) ? buildings : [];
+  console.log('[Map] About to render buildings:', buildings?.length || 0);
+  
+  const buildingsArray = Array.isArray(buildings) ? buildings : [];
   
   return (
     <div 
       ref={containerRef}
-      className="game-area"
-      style={{
-        backgroundImage: `url(${BACKGROUND_URL})`,
+      className="game-area relative w-full h-full"
+      style={{ 
+        backgroundImage: `url(${GameAssets.BACKGROUND_BATTLE})`,
       }}
     >
       <div className="buildings">
-        {console.log('[Map] Rendering', validBuildings.length, 'buildings')}
-        {validBuildings.length > 0 ? (
-          validBuildings.map(building => {
-            console.log(`[Map] Rendering building ${building.id} at position:`, building.position);
+        {console.log('[Map] Before mapping buildings for rendering')}
+        {buildingsArray.length > 0 ? (
+          buildingsArray.map(building => {
+            console.log(`[Map] Rendering building ${building.id}:`, building);
             return (
               <BuildingComponent
                 key={building.id}
@@ -77,12 +78,12 @@ const Map: React.FC<MapProps> = ({
             );
           })
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <div className="bg-black/70 text-white p-3 rounded-lg">
-              No buildings available yet. Initialize game first.
-            </div>
+          <div className="flex h-full w-full items-center justify-center text-amber-500 z-10">
+            {console.error('[Map] No buildings to render in Map component!')}
+            <p className="bg-black/30 p-2 rounded">Warte auf Spielinitialisierung...</p>
           </div>
         )}
+        {console.log('[Map] After mapping buildings')}
       </div>
       
       <UnitAnimation containerRef={containerRef} />

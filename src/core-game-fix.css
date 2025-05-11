@@ -1,0 +1,132 @@
+/* Core Game Fix CSS - Ensures proper rendering of game elements */
+
+/* Game area */
+.game-area {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-image: url('https://iili.io/3vhdSja.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Buildings container */
+.buildings {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+/* Individual building styling */
+.building {
+  position: absolute;
+  transform: translate(-50%, -50%); /* Center on coordinates */
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 20;
+}
+
+/* Selection highlights */
+.building.selected {
+  z-index: 30;
+}
+
+.building-highlight-source {
+  z-index: 30;
+}
+
+.building-highlight-target {
+  z-index: 30;
+}
+
+/* Always show building icons */
+.building img {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  object-fit: contain;
+  width: 100%;
+  height: 100%;
+}
+
+/* Style for indicators */
+.building .unit-count {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-weight: bold;
+  border-radius: 10px;
+  padding: 2px 5px;
+  font-size: 0.7rem;
+  min-width: 20px;
+  text-align: center;
+  z-index: 25;
+}
+
+.building .level-indicator {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 10px;
+  padding: 2px 5px;
+  font-size: 0.7rem;
+  min-width: 20px;
+  text-align: center;
+  z-index: 25;
+}
+
+/* Debug styles */
+.debug-position {
+  color: white;
+  font-size: 0.6rem;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 1px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Game container with aspect ratio preservation */
+.game-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.game-board {
+  width: 100%;
+  max-width: 100vh;
+  aspect-ratio: 16/9;
+  position: relative;
+  margin: 0 auto;
+  border: 1px solid #333;
+  overflow: hidden;
+}
+
+/* Building owner color indicators */
+.building[data-owner="player"] {
+  filter: drop-shadow(0 0 3px blue);
+}
+
+.building[data-owner="enemy"] {
+  filter: drop-shadow(0 0 3px red);
+}
+
+.building[data-owner="neutral"] {
+  filter: drop-shadow(0 0 3px gray);
+} 

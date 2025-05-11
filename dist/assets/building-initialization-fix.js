@@ -135,6 +135,48 @@
     }
   }
   
+  // Apply background image to the game area
+  function applyBackgroundImage() {
+    console.log('[PATCH] Attempting to set game map background image');
+    
+    // Create a separate style element for the background image with higher specificity
+    const backgroundStyle = document.createElement('style');
+    backgroundStyle.textContent = `
+      .game-area {
+        background-image: url('https://iili.io/3vhdSja.png') !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        width: 100% !important;
+        height: 100% !important;
+        position: relative !important;
+        overflow: hidden !important;
+      }
+    `;
+    document.head.appendChild(backgroundStyle);
+    
+    // Also apply the background directly to existing elements for redundancy
+    const gameAreas = document.querySelectorAll('.game-area');
+    console.log('[PATCH] Found', gameAreas.length, 'game-area elements');
+    
+    gameAreas.forEach(element => {
+      element.style.backgroundImage = "url('https://iili.io/3vhdSja.png')";
+      element.style.backgroundSize = "cover";
+      element.style.backgroundPosition = "center";
+      element.style.backgroundRepeat = "no-repeat";
+    });
+    
+    // If no elements found yet, try again after a delay
+    if (gameAreas.length === 0) {
+      setTimeout(applyBackgroundImage, 1000);
+    } else {
+      console.log('[PATCH] Background image applied successfully');
+    }
+  }
+  
   // Start patching
   patchComponents();
+  
+  // Apply background image after a slight delay to ensure the DOM is ready
+  setTimeout(applyBackgroundImage, 500);
 })(); 

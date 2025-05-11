@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import './core-game-fix.css';
 import { UnitAnimationProvider } from './hooks/useUnitAnimations';
 import { formatErrorForReporting } from './utils/errorUtils';
 

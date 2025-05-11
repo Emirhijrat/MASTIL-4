@@ -1,9 +1,8 @@
-import React, { forwardRef, useEffect, RefObject } from 'react';
+import React, { forwardRef, useEffect } from 'react';
 import { Building as BuildingType } from '../types/gameTypes';
-import ContextualUpgradeButton from './ContextualUpgradeButton';
 import { useUnitAnimations } from '../hooks/useUnitAnimations';
 import { useAudio } from '../hooks/useAudio';
-import BuildingIcon from './BuildingIcon';
+import { getTowerAsset, getVillageAsset } from '../assets/assetManager';
 
 interface BuildingProps {
   building: BuildingType;
@@ -25,8 +24,8 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
   unitsInProduction = 0
 }, ref) => {
   // Access highlighted building IDs from the animations context
-  const { highlightedSourceId, highlightedTargetId } = useUnitAnimations();
-  const { playSelectSound } = useAudio();
+  const { highlightedSourceId, highlightedTargetId } = useUnitAnimations() || { highlightedSourceId: null, highlightedTargetId: null };
+  const { playSelectSound } = useAudio() || { playSelectSound: () => {} };
   
   const isSource = highlightedSourceId === building.id;
   const isTarget = highlightedTargetId === building.id;
@@ -47,75 +46,62 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
   }, [selected, building.owner, playSelectSound]);
 
   const handleClick = () => {
+    console.log(`Building clicked: ${building.id} (owner: ${building.owner})`);
     onClick(building.id);
   };
 
-  // Determine if the upgrade button should be visible
-  const shouldShowUpgradeButton = 
-    selected && 
-    building.owner === 'player' && 
-    typeof upgradeCost === 'number' && 
-    typeof onUpgrade === 'function';
+  // Get the appropriate image asset based on building type
+  const getImageSrc = () => {
+    if (building.owner === 'neutral') {
+      // For neutral buildings, use village assets with variation based on ID
+      const variation = (parseInt(building.id.replace(/\D/g, '')) % 3) + 1;
+      return getVillageAsset(variation as 1 | 2 | 3);
+    } else {
+      // For player/enemy buildings, use tower assets
+      return getTowerAsset(building.owner, building.element);
+    }
+  };
 
   return (
     <div 
       ref={ref}
-      className={`building flex flex-col items-center justify-center 
-                 ${getHighlightClass()} touch-manipulation select-none`}
+      className={`building ${getHighlightClass()}`}
       style={{
         left: `${building.position.x * 100}%`,
         top: `${building.position.y * 100}%`,
-        width: 'var(--game-min-touch)',
-        height: 'var(--game-min-touch)',
       }}
       onClick={handleClick}
       data-id={building.id}
+      data-owner={building.owner}
     >
-      {/* Unit count badge positioned at the top of the building */}
-      <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-10 bg-black/60 rounded-full px-2 py-0.5 min-w-[1.5rem] text-center">
-        <span className="text-[0.7rem] sm:text-sm font-bold text-white text-shadow-strong">
-          {building.units}
-        </span>
-      </div>
-
-      {/* Contextual Upgrade Button */}
-      {shouldShowUpgradeButton && (
-        <ContextualUpgradeButton
-          building={building}
-          isVisible={shouldShowUpgradeButton}
-          upgradeCost={upgradeCost!}
-          canUpgrade={Boolean(canUpgrade)}
-          onUpgrade={onUpgrade!}
-        />
+      {/* Debug position */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="debug-position">
+          {building.position.x.toFixed(2)}, {building.position.y.toFixed(2)}
+        </div>
       )}
-
-      {/* Building visual using the BuildingIcon component */}
-      <div className="relative w-full h-full flex items-center justify-center">
-        <BuildingIcon
-          owner={building.owner}
-          element={building.element}
-          variation={building.owner === 'neutral' 
-            ? (parseInt(building.id.replace(/\D/g, '')) % 3) + 1 as 1 | 2 | 3
-            : 1}
-          selected={selected}
-          isSource={isSource}
-          isTarget={isTarget}
-        />
+      
+      {/* Unit count badge */}
+      <div className="unit-count">
+        {building.units}
       </div>
 
-      {/* Level badge at the bottom of the building */}
-      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 z-10 bg-black/60 rounded-full px-2 py-0.5 min-w-[1.5rem] text-center">
-        <span className="text-[0.7rem] sm:text-sm font-medium text-white text-shadow-strong">
-          {building.level}
-        </span>
+      {/* Building icon */}
+      <img 
+        src={getImageSrc()}
+        alt={`${building.owner} building`}
+        className="building-image"
+      />
+
+      {/* Level indicator */}
+      <div className="level-indicator">
+        Lvl {building.level}
       </div>
       
       {/* Production indicator for player buildings */}
       {unitsInProduction > 0 && building.owner === 'player' && (
-        <div className="absolute top-1 right-0 flex items-center">
-          <span className="text-xs text-yellow-200 bg-black/60 px-1 py-0.5 rounded-full text-shadow-strong animate-pulse">
-            +{unitsInProduction}
-          </span>
+        <div className="absolute top-0 right-0 text-xs text-yellow-200 bg-black/60 px-1 py-0.5 rounded-full">
+          +{unitsInProduction}
         </div>
       )}
     </div>
