@@ -48,35 +48,35 @@ export type AssetKey =
  */
 export const GameAssets: Record<AssetKey, string> = {
   // Towers
-  TOWER_PLAYER_WATER: '/assets/images/buildings/tower_player_water.png',
-  TOWER_PLAYER_FIRE: '/assets/images/buildings/tower_player_fire.png',
-  TOWER_PLAYER_EARTH: '/assets/images/buildings/tower_player_earth.png',
-  TOWER_PLAYER_AIR: '/assets/images/buildings/tower_player_air.png',
-  TOWER_ENEMY_WATER: '/assets/images/buildings/tower_enemy_water.png',
-  TOWER_ENEMY_FIRE: '/assets/images/buildings/tower_enemy_fire.png',
-  TOWER_ENEMY_EARTH: '/assets/images/buildings/tower_enemy_earth.png',
-  TOWER_ENEMY_AIR: '/assets/images/buildings/tower_enemy_air.png',
-  TOWER_NEUTRAL: '/assets/images/buildings/tower_neutral.png',
+  TOWER_PLAYER_WATER: '/assets/images/buildings/tower_player_water.svg',
+  TOWER_PLAYER_FIRE: '/assets/images/buildings/tower_player_fire.svg',
+  TOWER_PLAYER_EARTH: '/assets/images/buildings/tower_player_earth.svg',
+  TOWER_PLAYER_AIR: '/assets/images/buildings/tower_player_air.svg',
+  TOWER_ENEMY_WATER: '/assets/images/buildings/tower_enemy_water.svg',
+  TOWER_ENEMY_FIRE: '/assets/images/buildings/tower_enemy_fire.svg',
+  TOWER_ENEMY_EARTH: '/assets/images/buildings/tower_enemy_earth.svg',
+  TOWER_ENEMY_AIR: '/assets/images/buildings/tower_enemy_air.svg',
+  TOWER_NEUTRAL: '/assets/images/buildings/tower_neutral.svg',
   
   // Villages (neutral buildings)
-  VILLAGE_TYPE_1: '/assets/images/buildings/village_type1.png',
-  VILLAGE_TYPE_2: '/assets/images/buildings/village_type2.png',
-  VILLAGE_TYPE_3: '/assets/images/buildings/village_type3.png',
+  VILLAGE_TYPE_1: '/assets/images/buildings/village_type1.svg',
+  VILLAGE_TYPE_2: '/assets/images/buildings/village_type2.svg',
+  VILLAGE_TYPE_3: '/assets/images/buildings/village_type3.svg',
   
   // UI elements
-  BUTTON_UPGRADE: '/assets/images/ui/button_upgrade.png',
-  BUTTON_ATTACK: '/assets/images/ui/button_attack.png',
-  BUTTON_CANCEL: '/assets/images/ui/button_cancel.png',
-  ICON_GOLD: '/assets/images/ui/icon_gold.png',
-  ICON_UNITS: '/assets/images/ui/icon_units.png',
+  BUTTON_UPGRADE: '/assets/images/ui/button_upgrade.svg',
+  BUTTON_ATTACK: '/assets/images/ui/button_attack.svg',
+  BUTTON_CANCEL: '/assets/images/ui/button_cancel.svg',
+  ICON_GOLD: '/assets/images/ui/icon_gold.svg',
+  ICON_UNITS: '/assets/images/ui/icon_units.svg',
   
   // Backgrounds
-  BACKGROUND_MAIN: '/assets/images/backgrounds/main_background.jpg',
-  BACKGROUND_BATTLE: '/assets/images/backgrounds/battle_background.jpg',
+  BACKGROUND_MAIN: '/assets/images/backgrounds/main_background.svg',
+  BACKGROUND_BATTLE: '/assets/images/backgrounds/battle_background.svg',
   
   // Effects
-  EFFECT_ATTACK: '/assets/images/effects/attack_effect.png',
-  EFFECT_UPGRADE: '/assets/images/effects/upgrade_effect.png'
+  EFFECT_ATTACK: '/assets/images/effects/attack_effect.svg',
+  EFFECT_UPGRADE: '/assets/images/effects/upgrade_effect.svg'
 };
 
 /**

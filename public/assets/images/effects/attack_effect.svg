@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Attack effect - crossed swords -->
+  <g>
+    <!-- Sword 1 -->
+    <path d="M 20,20 L 70,70" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 20,20 L 30,30" stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 70,70 L 75,75" stroke="#64748B" stroke-width="3" stroke-linecap="square"/>
+    
+    <!-- Sword 1 hilt -->
+    <rect x="15" y="10" width="10" height="5" fill="#78350F" stroke="#92400E" stroke-width="1"/>
+    <line x1="20" y1="5" x2="20" y2="10" stroke="#92400E" stroke-width="2"/>
+    
+    <!-- Sword 2 -->
+    <path d="M 80,20 L 30,70" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 80,20 L 70,30" stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 30,70 L 25,75" stroke="#64748B" stroke-width="3" stroke-linecap="square"/>
+    
+    <!-- Sword 2 hilt -->
+    <rect x="75" y="10" width="10" height="5" fill="#78350F" stroke="#92400E" stroke-width="1"/>
+    <line x1="80" y1="5" x2="80" y2="10" stroke="#92400E" stroke-width="2"/>
+    
+    <!-- Impact flash -->
+    <circle cx="50" cy="50" r="8" fill="#FEF3C7" opacity="0.8">
+      <animate attributeName="r" values="2;8;6" dur="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1;0.8;0.6" dur="0.3s" repeatCount="indefinite"/>
+    </circle>
+    
+    <!-- Small sparks -->
+    <circle cx="45" cy="45" r="2" fill="#FBBF24" opacity="0.9">
+      <animate attributeName="cx" values="45;42;40" dur="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="cy" values="45;42;40" dur="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1;0.6;0" dur="0.3s" repeatCount="indefinite"/>
+    </circle>
+    
+    <circle cx="55" cy="45" r="2" fill="#FBBF24" opacity="0.9">
+      <animate attributeName="cx" values="55;58;60" dur="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="cy" values="45;42;40" dur="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1;0.6;0" dur="0.3s" repeatCount="indefinite"/>
+    </circle>
+    
+    <circle cx="45" cy="55" r="2" fill="#FBBF24" opacity="0.9">
+      <animate attributeName="cx" values="45;42;40" dur="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="cy" values="55;58;60" dur="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1;0.6;0" dur="0.3s" repeatCount="indefinite"/>
+    </circle>
+    
+    <circle cx="55" cy="55" r="2" fill="#FBBF24" opacity="0.9">
+      <animate attributeName="cx" values="55;58;60" dur="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="cy" values="55;58;60" dur="0.3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1;0.6;0" dur="0.3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+</svg> 

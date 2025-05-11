@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600">
+  <!-- Sky gradient -->
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A5B4FC;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky -->
+  <rect x="0" y="0" width="1000" height="600" fill="url(#skyGradient)" />
+  
+  <!-- Distant mountains -->
+  <path d="M 0,250 L 100,180 L 200,250 L 300,200 L 400,280 L 500,150 L 600,250 L 700,180 L 800,220 L 900,180 L 1000,250 L 1000,600 L 0,600 Z" fill="#6B7280" />
+  
+  <!-- Middle mountains -->
+  <path d="M 0,300 L 100,250 L 200,320 L 300,280 L 400,350 L 500,230 L 600,300 L 700,270 L 800,330 L 900,250 L 1000,320 L 1000,600 L 0,600 Z" fill="#4B5563" />
+  
+  <!-- Foreground hills -->
+  <path d="M 0,380 L 120,340 L 250,400 L 400,350 L 550,420 L 700,360 L 850,410 L 1000,370 L 1000,600 L 0,600 Z" fill="#374151" />
+  
+  <!-- Ground -->
+  <rect x="0" y="450" width="1000" height="150" fill="#1F2937" />
+  
+  <!-- Trees/forest silhouettes -->
+  <g opacity="0.7">
+    <circle cx="100" cy="440" r="15" fill="#064E3B" />
+    <circle cx="150" cy="430" r="18" fill="#065F46" />
+    <circle cx="200" cy="445" r="12" fill="#064E3B" />
+    <circle cx="250" cy="435" r="15" fill="#065F46" />
+    
+    <circle cx="350" cy="440" r="13" fill="#064E3B" />
+    <circle cx="400" cy="435" r="16" fill="#065F46" />
+    <circle cx="450" cy="445" r="14" fill="#064E3B" />
+    
+    <circle cx="650" cy="438" r="17" fill="#064E3B" />
+    <circle cx="700" cy="430" r="15" fill="#065F46" />
+    <circle cx="750" cy="445" r="12" fill="#064E3B" />
+    <circle cx="800" cy="435" r="16" fill="#065F46" />
+    <circle cx="850" cy="442" r="13" fill="#064E3B" />
+    <circle cx="900" cy="438" r="15" fill="#065F46" />
+  </g>
+  
+  <!-- Distant castle silhouette -->
+  <path d="M 480,390 L 480,350 L 490,350 L 490,340 L 500,340 L 510,340 L 510,350 L 520,350 L 520,390 Z" fill="#1E293B" />
+  <rect x="460" y="390" width="80" height="30" fill="#1E293B" />
+  <rect x="455" y="420" width="90" height="30" fill="#1E293B" />
+  
+  <!-- Moon -->
+  <circle cx="800" cy="100" r="40" fill="#FBBF24" opacity="0.8" />
+  <circle cx="790" cy="90" r="35" fill="#1E293B" opacity="0.5" />
+  
+  <!-- Stars -->
+  <g fill="#FFFFFF" opacity="0.8">
+    <circle cx="100" cy="50" r="1" />
+    <circle cx="150" cy="80" r="1" />
+    <circle cx="200" cy="40" r="1" />
+    <circle cx="250" cy="90" r="1" />
+    <circle cx="300" cy="60" r="1" />
+    <circle cx="350" cy="100" r="1" />
+    <circle cx="400" cy="70" r="1" />
+    <circle cx="450" cy="50" r="1" />
+    <circle cx="500" cy="80" r="1" />
+    <circle cx="550" cy="40" r="1" />
+    <circle cx="600" cy="90" r="1" />
+    <circle cx="650" cy="60" r="1" />
+    <circle cx="700" cy="100" r="1" />
+    <circle cx="750" cy="70" r="1" />
+    <circle cx="850" cy="50" r="1" />
+    <circle cx="900" cy="80" r="1" />
+    <circle cx="950" cy="60" r="1" />
+  </g>
+</svg> 

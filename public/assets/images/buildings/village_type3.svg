@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Ground/Base -->
+  <ellipse cx="50" cy="85" rx="40" ry="5" fill="#6B7280" opacity="0.2"/>
+  
+  <!-- Multi-building hamlet -->
+  <!-- Building 1 (left) -->
+  <rect x="15" y="60" width="25" height="20" fill="#7C2D12" stroke="#9A3412" stroke-width="2"/>
+  <path d="M 10,60 L 27.5,40 L 45,60" fill="#9A3412" stroke="#7C2D12" stroke-width="2"/>
+  
+  <!-- Building 2 (right) -->
+  <rect x="60" y="55" width="25" height="25" fill="#7C2D12" stroke="#9A3412" stroke-width="2"/>
+  <path d="M 55,55 L 72.5,35 L 90,55" fill="#9A3412" stroke="#7C2D12" stroke-width="2"/>
+  
+  <!-- Building 3 (center, smaller) -->
+  <rect x="40" y="65" width="20" height="15" fill="#7C2D12" stroke="#9A3412" stroke-width="2"/>
+  <path d="M 35,65 L 50,50 L 65,65" fill="#9A3412" stroke="#7C2D12" stroke-width="2"/>
+  
+  <!-- Windows -->
+  <rect x="20" y="65" width="6" height="6" fill="#FBBF24" opacity="0.5" stroke="#7C2D12" stroke-width="1"/>
+  <rect x="30" y="65" width="6" height="6" fill="#FBBF24" opacity="0.5" stroke="#7C2D12" stroke-width="1"/>
+  <rect x="65" y="60" width="6" height="6" fill="#FBBF24" opacity="0.5" stroke="#7C2D12" stroke-width="1"/>
+  <rect x="75" y="60" width="6" height="6" fill="#FBBF24" opacity="0.5" stroke="#7C2D12" stroke-width="1"/>
+  <rect x="45" y="67" width="5" height="5" fill="#FBBF24" opacity="0.5" stroke="#7C2D12" stroke-width="1"/>
+  
+  <!-- Doors -->
+  <rect x="25" y="70" width="5" height="10" fill="#78350F" stroke="#7C2D12" stroke-width="1"/>
+  <rect x="70" y="70" width="5" height="10" fill="#78350F" stroke="#7C2D12" stroke-width="1"/>
+  <rect x="47" y="72" width="4" height="8" fill="#78350F" stroke="#7C2D12" stroke-width="1"/>
+  
+  <!-- Chimneys -->
+  <rect x="15" y="45" width="4" height="15" fill="#78350F" stroke="#7C2D12" stroke-width="1"/>
+  <path d="M 15,45 C 18,40 15,35 18,30" fill="none" stroke="#9CA3AF" strokeWidth="1" strokeDasharray="1,2"/>
+  
+  <rect x="85" y="40" width="4" height="15" fill="#78350F" stroke="#7C2D12" stroke-width="1"/>
+  <path d="M 85,40 C 88,35 85,30 88,25" fill="none" stroke="#9CA3AF" strokeWidth="1" strokeDasharray="1,2"/>
+  
+  <!-- Central well or fountain -->
+  <circle cx="50" cy="45" r="5" fill="#9CA3AF" stroke="#6B7280" stroke-width="1"/>
+  <rect x="48" y="35" width="4" height="5" fill="#6B7280" stroke="#4B5563" stroke-width="1"/>
+  <path d="M 45,45 L 55,45" stroke="#4B5563" stroke-width="1"/>
+</svg> 
