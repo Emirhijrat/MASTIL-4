@@ -243,6 +243,9 @@ function App() {
             onForceComment={forceComment}
           />
           
+          {/* Add the requested log statement */}
+          {console.log('[App.tsx] Passing buildings to GameBoard. Length:', buildings.length, 'Content:', JSON.stringify(buildings.map(b => b.id)))}
+          
           <GameBoard
             buildings={buildings}
             selectedBuildingId={selectedBuildingId}

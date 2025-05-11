@@ -30,6 +30,13 @@ const MAX_BUILDING_LEVEL = gameConfig.maxBuildingLevel || 5;
 const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
   console.log('=== GAMEBOARD RENDER START ===');
   
+  // Add the requested detailed logging for the received buildings prop
+  console.log('[GameBoard] Received buildings prop directly from props:', { 
+    onSettings, 
+    onExit,
+    propsKeys: Object.keys(arguments[0] || {})
+  });
+  
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   
   const { 

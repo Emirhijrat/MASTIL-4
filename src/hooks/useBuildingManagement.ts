@@ -149,6 +149,10 @@ export function useBuildingManagement(config: GameConfig) {
       console.log('[useBuildingManagement] New buildings array created with length:', newBuildings.length);
       console.log('[useBuildingManagement] First few buildings:', newBuildings.slice(0, 3));
       
+      // Add additional detailed log to track newBuildings just before setting state
+      console.log('[handlePlayerSetup] Mapped newBuildings PRE-SET:', JSON.stringify(newBuildings.map(b => ({ id: b.id, owner: b.owner, units: b.units }))));
+      console.log('[handlePlayerSetup] Calling setBuildings with newBuildings.');
+      
       setBuildings(newBuildings);
       console.log('[useBuildingManagement] setBuildings called with new buildings array');
       

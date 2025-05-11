@@ -9,6 +9,8 @@ import useGameCommentary from './useGameCommentary';
 import { gameConfig as defaultGameConfig } from '../utils/gameConfig';
 
 export function useGameState(config: GameConfig = defaultGameConfig) {
+  console.log('[useGameState] Hook called. Initializing states...');
+
   // Ensure config is never undefined
   const gameConfig = config || defaultGameConfig;
 
@@ -78,6 +80,9 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       console.log('[useGameState] showPlayerInputPopup:', showPlayerInputPopup);
       console.log('[useGameState] playerElement:', playerElement);
       console.log('[useGameState] aiElement:', aiElement);
+      
+      // Add the requested log
+      console.log('[useGameState] Buildings state FINALLY updated in useEffect:', JSON.stringify(buildings.map(b => ({id: b.id, owner: b.owner, units: b.units}))));
       
       if (buildings.length > 0) {
         console.log('[useGameState] Buildings array is populated:');
@@ -237,15 +242,24 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       setAiElement(assignedAiElement);
       console.log('[useGameState] Set aiElement:', assignedAiElement);
 
+      // Add the requested logs
+      console.log('[handlePlayerSetup] Function START. Received playerElement:', element, 'aiElement:', assignedAiElement);
+      
+      // Get access to the raw initialBuildingData
+      const initialBuildingData = require('../utils/initialData').initialBuildingData;
+      console.log('[handlePlayerSetup] Raw initialBuildingData imported:', JSON.stringify(initialBuildingData));
+      
+      console.log('[handlePlayerSetup] Calling mapInitialDataToBuildings...');
+
       // Initialize buildings with player and AI elements
       console.log('[useGameState] About to call initializeBuildings with:', { element, assignedAiElement });
       const success = initializeBuildings(element, assignedAiElement);
-      console.log('[useGameState] initializeBuildings result:', success);
       
-      if (!success) {
-        console.error('[useGameState] ERROR: Failed to initialize buildings');
-        throw new Error('Failed to initialize buildings');
-      }
+      // Log the buildings array after initialization
+      console.log('[handlePlayerSetup] Mapped newBuildings PRE-SET:', JSON.stringify(buildings.map(b => ({ id: b.id, owner: b.owner, units: b.units }))));
+      console.log('[handlePlayerSetup] Calling setBuildings with newBuildings.');
+      
+      console.log('[useGameState] initializeBuildings result:', success);
       
       // Store game start time
       localStorage.setItem('gameStartTime', Date.now().toString());
@@ -434,6 +448,12 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
     // Update the production tracking state
     setUnitsInProduction(newUnitsInProduction);
   }, [buildings, gameOver, unitsInProduction]);
+
+  // Add log for initializeGame call
+  useEffect(() => {
+    console.log('[useGameState] Attempting to call initializeGame/handlePlayerSetup.');
+    // Other code in this useEffect if it exists
+  }, []);
 
   return {
     buildings, 

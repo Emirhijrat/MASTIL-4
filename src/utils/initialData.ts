@@ -101,3 +101,6 @@ console.log('[initialData.ts] Mapped buildings summary:', initialBuildings.map(b
   units: b.units,
   position: b.position
 })));
+
+// Add the requested detailed log
+console.log('[initialData.ts FINAL CHECK] Exported initialBuildings:', JSON.stringify(initialBuildings.map(b => ({ id: b.id, owner: b.owner, units: b.units, level: b.level, position: b.position, element: b.element }))));
