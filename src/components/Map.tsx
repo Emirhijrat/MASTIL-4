@@ -1,19 +1,20 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Building as BuildingType } from '../types/gameTypes';
-import BuildingFactory from './map-elements/BuildingFactory';
+import BuildingComponent from './Building';
 import UnitAnimation from './UnitAnimation';
+import { GameAssets } from '../assets/assetManager';
 
 interface MapProps {
   buildings: BuildingType[];
   selectedBuildingId: string | null;
   onBuildingClick: (id: string) => void;
-  getUpgradeCost: (building: BuildingType) => number;
-  onUpgrade: (building: BuildingType) => void;
+  getUpgradeCost: (level: number) => number;
+  onUpgrade: () => void;
   unitsInProduction?: Record<string, number>;
 }
 
 const Map: React.FC<MapProps> = ({ 
-  buildings, 
+  buildings = [],
   selectedBuildingId, 
   onBuildingClick,
   getUpgradeCost,
@@ -44,42 +45,46 @@ const Map: React.FC<MapProps> = ({
       window.addEventListener('resize', updateDimensions);
       return () => window.removeEventListener('resize', updateDimensions);
     }
-  }, [buildings]);
+  }, [buildings, dimensions]);
 
   console.log('[Map] About to render buildings:', buildings?.length || 0);
+  
+  const buildingsArray = Array.isArray(buildings) ? buildings : [];
   
   return (
     <div 
       ref={containerRef}
-      className="game-area relative w-full h-full min-h-[300px] p-4 sm:p-6 md:p-8"
+      className="game-area relative w-full h-full"
+      style={{ 
+        backgroundImage: `url(${GameAssets.BACKGROUND_BATTLE})`,
+      }}
     >
-      {console.log('[Map] Before mapping buildings for rendering')}
-      {buildings && buildings.length > 0 ? (
-        buildings.map(building => {
-          console.log(`[Map] Rendering building ${building.id}:`, building);
-          const upgradeCost = getUpgradeCost(building);
-          const canUpgrade = building.owner === 'player' && building.units >= upgradeCost;
-          
-          return (
-            <BuildingFactory
-              key={building.id}
-              building={building}
-              selected={building.id === selectedBuildingId}
-              onClick={onBuildingClick}
-              upgradeCost={upgradeCost}
-              canUpgrade={canUpgrade}
-              onUpgrade={() => onUpgrade(building)}
-              unitsInProduction={unitsInProduction[building.id] || 0}
-            />
-          );
-        })
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-amber-500 z-10">
-          {console.error('[Map] No buildings to render in Map component!')}
-          <p className="bg-black/30 p-2 rounded">No map elements available</p>
-        </div>
-      )}
-      {console.log('[Map] After mapping buildings')}
+      <div className="buildings">
+        {console.log('[Map] Before mapping buildings for rendering')}
+        {buildingsArray.length > 0 ? (
+          buildingsArray.map(building => {
+            console.log(`[Map] Rendering building ${building.id}:`, building);
+            return (
+              <BuildingComponent
+                key={building.id}
+                building={building}
+                selected={building.id === selectedBuildingId}
+                onClick={onBuildingClick}
+                upgradeCost={building.owner === 'player' ? getUpgradeCost(building.level) : undefined}
+                canUpgrade={building.owner === 'player'}
+                onUpgrade={building.owner === 'player' ? onUpgrade : undefined}
+                unitsInProduction={unitsInProduction[building.id] || 0}
+              />
+            );
+          })
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-amber-500 z-10">
+            {console.error('[Map] No buildings to render in Map component!')}
+            <p className="bg-black/30 p-2 rounded">Warte auf Spielinitialisierung...</p>
+          </div>
+        )}
+        {console.log('[Map] After mapping buildings')}
+      </div>
       
       <UnitAnimation containerRef={containerRef} />
     </div>

@@ -33,15 +33,15 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   
   const { 
-    buildings, 
+    buildings = [], // Default to empty array if buildings is undefined
     selectedBuildingId, 
-    handleBuildingClick, 
+    handleBuildingClick = () => {}, // Default function if not provided
     player = { gold: 0, score: 0 },
-    getUpgradeCost, 
-    handleUpgrade,
-    unitsInProduction,
+    getUpgradeCost = () => 0, // Default function if not provided
+    handleUpgrade = () => {}, // Default function if not provided
+    unitsInProduction = {},
     message
-  } = useGameState();
+  } = useGameState() || {}; // Make sure useGameState result is not null
 
   // Comprehensive building data logging
   console.log('[GameBoard] useGameState returned buildings:', buildings);
@@ -87,79 +87,51 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
   };
 
   console.log('[GameBoard] About to render with buildings:', buildings?.length || 0);
-  const buildingBaseSize = 6;
 
   return (
     <ErrorBoundary>
-      <div className={`w-full h-full max-w-[min(90vh,800px)] aspect-[4/3] sm:aspect-[16/9] 
-                      rounded-xl shadow-2xl overflow-hidden flex flex-col 
-                      border border-[var(--mastil-border)] touch-manipulation game-board`}>
-        <StatusBar 
-          playerGold={player?.gold || 0} 
-          playerScore={player?.score || 0}
-          onSettingsClick={() => onSettings()}
-        />
-        
-        <div className="flex-grow relative">
-          <Map 
-            buildings={buildings}
-            selectedBuildingId={selectedBuildingId}
-            onBuildingClick={handleBuildingClick}
-            getUpgradeCost={getUpgradeCost}
-            onUpgrade={handleUpgrade}
-            unitsInProduction={unitsInProduction}
+      <div className="game-container w-full h-full">
+        <div className="game-board rounded-xl shadow-2xl overflow-hidden flex flex-col 
+              border border-[var(--mastil-border)] touch-manipulation select-none">
+          <StatusBar 
+            playerGold={player?.gold || 0} 
+            playerScore={player?.score || 0}
+            onSettingsClick={() => onSettings()}
           />
-        </div>
-        
-        <MessageBox message={message} />
+          
+          <div className="flex-grow relative">
+            <Map 
+              buildings={buildings}
+              selectedBuildingId={selectedBuildingId}
+              onBuildingClick={handleBuildingClick}
+              getUpgradeCost={getUpgradeCost}
+              onUpgrade={handleUpgrade}
+              unitsInProduction={unitsInProduction}
+            />
+          </div>
+          
+          <MessageBox message={message} />
 
-        {isSettingsPanelOpen && (
-          <SettingsPanel onClose={() => setIsSettingsPanelOpen(false)} />
-        )}
-
-        <DebugOverlay 
-          buildings={buildings}
-          onCoordinateUpdate={handleCoordinateUpdate}
-        />
-
-        {/* Buildings */}
-        <div className="buildings absolute inset-0 pointer-events-none">
-          {console.log('[GameBoard] Before mapping buildings:', buildings?.length || 0, 'buildings')}
-          {buildings && buildings.length > 0 ? (
-            buildings.map(building => {
-              console.log(`[GameBoard] Rendering building ${building.id}:`, building);
-              return (
-                <BuildingComponent
-                  key={building.id}
-                  building={building}
-                  selected={selectedBuildingId === building.id}
-                  onClick={(id) => handleBuildingClick(id)}
-                  upgradeCost={building.owner === 'player' ? getUpgradeCost(building.level) : undefined}
-                  canUpgrade={building.owner === 'player' && (player?.gold || 0) >= getUpgradeCost(building.level)}
-                  onUpgrade={building.owner === 'player' ? handleUpgrade : undefined}
-                  unitsInProduction={unitsInProduction[building.id] || 0}
-                />
-              );
-            })
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-red-500">
-              {console.error('[GameBoard] No buildings to render!')}
-              <p>No buildings to display</p>
-            </div>
+          {isSettingsPanelOpen && (
+            <SettingsPanel onClose={() => setIsSettingsPanelOpen(false)} />
           )}
-          {console.log('[GameBoard] After mapping buildings')}
+
+          <DebugOverlay 
+            buildings={buildings}
+            onCoordinateUpdate={handleCoordinateUpdate}
+          />
+
+          {/* Unit animations layer */}
+          <UnitAnimations />
+          
+          {/* Game controls */}
+          <GameControls 
+            onExit={onExit}
+          />
+          
+          {/* Control bar */}
+          <ControlBar />
         </div>
-        
-        {/* Unit animations layer */}
-        <UnitAnimations />
-        
-        {/* Game controls */}
-        <GameControls 
-          onExit={onExit}
-        />
-        
-        {/* Control bar */}
-        <ControlBar />
       </div>
     </ErrorBoundary>
   );

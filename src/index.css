@@ -5,6 +5,8 @@
 :root {
   --mastil-source: #10B981;  /* Green for source highlights */
   --mastil-target: #7C3AED;  /* Purple for target highlights */
+  --game-aspect-ratio: 16/9; /* Default aspect ratio for the game area */
+  --game-min-touch: 40px;    /* Minimum size for touch targets */
 }
 
 @layer utilities {
@@ -55,31 +57,74 @@
   }
 }
 
+/* Game container with responsive scaling while maintaining aspect ratio */
+.game-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.game-board {
+  width: 100%;
+  height: 100%;
+  max-width: 100vh;
+  max-height: 100%;
+  aspect-ratio: var(--game-aspect-ratio);
+  position: relative;
+  margin: 0 auto;
+}
+
+.game-area {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.buildings {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none; /* The buildings themselves handle clicks */
+}
+
 .building {
   transition: all 0.2s ease-in-out;
   cursor: pointer;
+  position: absolute;
+  transform: translate(-50%, -50%); /* Center the building on its position point */
   min-width: var(--game-min-touch);
   min-height: var(--game-min-touch);
+  pointer-events: auto; /* Re-enable pointer events for individual buildings */
 }
 
 .building:hover {
-  transform: scale(1.03);
+  transform: translate(-50%, -50%) scale(1.03);
 }
 
 .building.selected {
-  transform: scale(1.05);
+  transform: translate(-50%, -50%) scale(1.05);
   box-shadow: 0 0 20px var(--mastil-accent);
 }
 
 .building.building-highlight-source {
-  transform: scale(1.1);
-  z-index: 10;
+  transform: translate(-50%, -50%) scale(1.1);
+  z-index: 20;
   animation: pulseSource 1.5s ease-in-out;
 }
 
 .building.building-highlight-target {
-  transform: scale(1.1);
-  z-index: 10;
+  transform: translate(-50%, -50%) scale(1.1);
+  z-index: 20;
   animation: pulseTarget 1.5s ease-in-out;
 }
 

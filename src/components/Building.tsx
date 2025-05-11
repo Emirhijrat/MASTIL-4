@@ -60,11 +60,11 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
   return (
     <div 
       ref={ref}
-      className={`building absolute flex flex-col items-center justify-center 
+      className={`building flex flex-col items-center justify-center 
                  ${getHighlightClass()} touch-manipulation select-none`}
       style={{
-        left: `calc(${building.position.x * 100}% - var(--game-min-touch) / 2)`,
-        top: `calc(${building.position.y * 100}% - var(--game-min-touch) / 2)`,
+        left: `${building.position.x * 100}%`,
+        top: `${building.position.y * 100}%`,
         width: 'var(--game-min-touch)',
         height: 'var(--game-min-touch)',
       }}
