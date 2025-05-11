@@ -27,7 +27,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
       <div 
         className="absolute inset-0 w-full h-full"
         style={{
-          backgroundImage: 'url("https://iili.io/3kEGMib.png")',
+          backgroundImage: 'url("https://iili.io/3vSEhLx.png")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
@@ -35,13 +35,13 @@ const StartScreen: React.FC<StartScreenProps> = ({
       />
 
       {/* Overlay with slight darkening */}
-      <div className="absolute inset-0 bg-black/30" />
+      <div className="absolute inset-0 bg-black/40" />
 
       {/* Game Title with medieval styling */}
       <div className="relative z-10 flex flex-col items-center mb-12 mt-16">
         <h1 className="text-6xl md:text-7xl font-bold text-[#FFDB58] tracking-wider mb-8"
             style={{ 
-              textShadow: '0 0 10px rgba(255, 219, 88, 0.6), 0 0 20px rgba(255, 219, 88, 0.4)', 
+              textShadow: '0 0 10px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.6)', 
               fontFamily: 'serif' 
             }}>
           {gameTitle}
@@ -52,8 +52,9 @@ const StartScreen: React.FC<StartScreenProps> = ({
           <p className="text-xl md:text-2xl lg:text-3xl text-amber-100/90 italic" 
              style={{ 
                fontFamily: 'serif',
-               textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8)',
-               lineHeight: '1.4'
+               textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 2px 2px 4px rgba(0, 0, 0, 0.7)',
+               lineHeight: '1.4',
+               color: '#FFE4B5'
              }}>
             "{quote}"
           </p>
@@ -66,7 +67,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
           onClick={onStartGame}
           className="w-full py-3 bg-[#8B4513]/80 hover:bg-[#8B4513] text-amber-200 rounded-md border-2 border-amber-700 shadow-md transition-all duration-300 font-medium"
           style={{ 
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 219, 88, 0.3)' 
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 219, 88, 0.3)' 
           }}
         >
           Spiel Starten
@@ -76,7 +77,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
           onClick={onShowSettings}
           className="w-full py-3 bg-[#654321]/70 hover:bg-[#654321] text-amber-200 rounded-md border-2 border-amber-800/80 shadow-md transition-all duration-300 font-medium"
           style={{ 
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 219, 88, 0.2)' 
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 219, 88, 0.2)' 
           }}
         >
           Einstellungen
@@ -86,7 +87,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
           onClick={onShowCredits}
           className="w-full py-3 bg-[#4A3428]/70 hover:bg-[#4A3428] text-amber-200 rounded-md border-2 border-amber-900/80 shadow-md transition-all duration-300 font-medium"
           style={{ 
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 219, 88, 0.15)' 
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 219, 88, 0.15)' 
           }}
         >
           Credits
