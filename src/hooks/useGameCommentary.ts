@@ -86,15 +86,17 @@ type GameCommentaryProps = {
   };
 };
 
-// Export a default function instead of a named export
-export default function useGameCommentary({
-  isGameActive,
-  isPaused,
-  playerBuildingCount,
-  enemyBuildingCount,
-  showMessage,
-  gameEvents
-}: GameCommentaryProps) {
+// Named export function (for imports using curly braces)
+export function useGameCommentary(props: GameCommentaryProps) {
+  const {
+    isGameActive,
+    isPaused,
+    playerBuildingCount,
+    enemyBuildingCount,
+    showMessage,
+    gameEvents
+  } = props;
+  
   const [lastCommentTime, setLastCommentTime] = useState(0);
   const [commentCooldown, setCommentCooldown] = useState(30000); // 30 seconds default
 
@@ -179,4 +181,7 @@ export default function useGameCommentary({
   }, [isGameActive, isPaused, getRandomComment, showMessage]);
 
   return { forceComment };
-} 
+}
+
+// Also export as default for default imports
+export default useGameCommentary; 
