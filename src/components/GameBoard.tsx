@@ -29,14 +29,6 @@ const MAX_BUILDING_LEVEL = gameConfig.maxBuildingLevel || 5;
 
 const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
   console.log('=== GAMEBOARD RENDER START ===');
-  console.log('GameBoard.tsx rendering with buildings count:', buildings.length);
-  console.log('Buildings data:', JSON.stringify(buildings.map(b => ({
-    id: b.id,
-    owner: b.owner,
-    units: b.units,
-    position: b.position,
-    element: b.element
-  }))));
   
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   
@@ -47,8 +39,19 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
     player, 
     getUpgradeCost, 
     handleUpgrade,
-    unitsInProduction
+    unitsInProduction,
+    message
   } = useGameState();
+
+  // Moved logging statements here after buildings is defined
+  console.log('GameBoard.tsx rendering with buildings count:', buildings.length);
+  console.log('Buildings data:', JSON.stringify(buildings.map(b => ({
+    id: b.id,
+    owner: b.owner,
+    units: b.units,
+    position: b.position,
+    element: b.element
+  }))));
 
   useEffect(() => {
     console.log('[GameBoard.tsx] Component mounted.');
