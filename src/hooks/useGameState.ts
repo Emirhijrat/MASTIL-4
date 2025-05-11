@@ -91,7 +91,7 @@ export function useGameState(config: GameConfig) {
   }, [buildings]);
 
   const { startUnitAnimation } = useUnitAnimationDispatch();
-  const { playAttackSound, playBackgroundMusic, stopBackgroundMusic } = useAudio();
+  const { playAttackSound, playBackgroundMusic, stopBackgroundMusic, playDeploySound, playUpgradeSound } = useAudio();
 
   // Enhanced message display logic with speaker information
   const showMessage = useCallback((text: string, speaker?: string, speakerColor?: string) => {
@@ -114,12 +114,18 @@ export function useGameState(config: GameConfig) {
     gameEvents
   });
 
+  // Add a state to track units in production for each building
+  const [unitsInProduction, setUnitsInProduction] = useState<Record<string, number>>({});
+
   // Wrap the base upgrade function
   const upgradeBuilding = useCallback((buildingToUpgrade: Building) => {
     // Don't allow upgrades when paused
     if (isPaused) return;
     upgradeBuildingBase(buildingToUpgrade, showPlayerInputPopup, showMessage);
-  }, [upgradeBuildingBase, showPlayerInputPopup, showMessage, isPaused]);
+    
+    // Play upgrade sound when building is successfully upgraded
+    playUpgradeSound();
+  }, [upgradeBuildingBase, showPlayerInputPopup, showMessage, isPaused, playUpgradeSound]);
 
   // Wrap the base handleUnitsArrival function with event tracking
   const handleUnitsArrival = useCallback((targetId: string, numUnits: number, attackerOwner: OwnerType) => {
@@ -151,22 +157,36 @@ export function useGameState(config: GameConfig) {
   }, [buildings, handleUnitsArrivalBase, showMessage, displayMessage]);
 
   // Send units from one building to another
-  const sendUnits = useCallback((source: Building, target: Building) => {
+  const sendUnits = useCallback((sourceId: string, targetId: string) => {
     // Don't allow sending units when paused
     if (showPlayerInputPopup || isPaused) return;
-    if (source.units <= 1) {
-      if(source.owner === 'player') showMessage("Not enough units to send.");
+    if (sourceId === targetId) {
+      showMessage("Cannot send units to the same building.");
       return;
     }
-    const unitsToSend = Math.floor(source.units * 0.5);
-    setBuildings(prevBuildings => prevBuildings.map(b => b.id === source.id ? { ...b, units: b.units - unitsToSend } : b));
+    
+    const sourceBuilding = buildings.find(b => b.id === sourceId);
+    const targetBuilding = buildings.find(b => b.id === targetId);
+    
+    if (!sourceBuilding || !targetBuilding) {
+      showMessage("Invalid building selection.");
+      return;
+    }
+
+    if (sourceBuilding.units <= 1) {
+      if(sourceBuilding.owner === 'player') showMessage("Not enough units to send.");
+      return;
+    }
+    const unitsToSend = Math.floor(sourceBuilding.units * 0.5);
+    setBuildings(prevBuildings => prevBuildings.map(b => b.id === sourceId ? { ...b, units: b.units - unitsToSend } : b));
     
     // Set combat occurring for commentary
     setGameEvents(prev => ({ ...prev, combatOccurring: true }));
     
     playAttackSound();
-    startUnitAnimation(source, target, unitsToSend, source.owner, handleUnitsArrival);
-  }, [playAttackSound, showMessage, startUnitAnimation, handleUnitsArrival, showPlayerInputPopup, setBuildings, isPaused]);
+    playDeploySound();
+    startUnitAnimation(sourceBuilding, targetBuilding, unitsToSend, sourceBuilding.owner, handleUnitsArrival);
+  }, [playAttackSound, showMessage, startUnitAnimation, handleUnitsArrival, showPlayerInputPopup, setBuildings, isPaused, playDeploySound]);
   
   // Player setup logic
   const handlePlayerSetup = useCallback((name: string, element: ElementType) => {
@@ -225,7 +245,7 @@ export function useGameState(config: GameConfig) {
     } else {
       const sourceBuilding = buildings.find(b => b.id === selectedBuildingId);
       if (sourceBuilding && building && sourceBuilding.id !== building.id) {
-        sendUnits(sourceBuilding, building);
+        sendUnits(sourceBuilding.id, building.id);
       }
       setSelectedBuildingId(null);
     }
@@ -334,6 +354,53 @@ export function useGameState(config: GameConfig) {
     }
   }, [buildings, checkWinCondition, showPlayerInputPopup, gameOver, isPaused]);
 
+  // In the generateUnits function, track units in production
+  const generateUnits = useCallback(() => {
+    // Clone the current unitsInProduction state
+    const newUnitsInProduction = { ...unitsInProduction };
+    
+    setBuildings(prevBuildings => {
+      const newBuildings = [...prevBuildings];
+      let changed = false;
+
+      newBuildings.forEach((building, index) => {
+        if (
+          !gameOver &&
+          !building.isInvulnerable &&
+          building.units < building.maxUnits
+        ) {
+          // Track that a unit is being produced in this building
+          newUnitsInProduction[building.id] = (newUnitsInProduction[building.id] || 0) + 1;
+          
+          // Wait a moment before adding the unit (visualization time)
+          setTimeout(() => {
+            setBuildings(current => 
+              current.map(b => 
+                b.id === building.id ? { ...b, units: Math.min(b.units + 1, b.maxUnits) } : b
+              )
+            );
+            
+            // Remove from production tracking after the unit is added
+            setUnitsInProduction(current => {
+              const updated = { ...current };
+              if (updated[building.id] > 0) {
+                updated[building.id]--;
+              }
+              return updated;
+            });
+          }, 1000); // 1 second delay for visual feedback
+          
+          changed = true;
+        }
+      });
+
+      return changed ? newBuildings : prevBuildings;
+    });
+    
+    // Update the production tracking state
+    setUnitsInProduction(newUnitsInProduction);
+  }, [buildings, gameOver, unitsInProduction]);
+
   return {
     buildings, 
     selectedBuildingId, 
@@ -357,6 +424,8 @@ export function useGameState(config: GameConfig) {
     getUpgradeCost: calculateUpgradeCost, 
     handlePlayerSetup,
     // Force a commentary message for testing
-    forceComment
+    forceComment,
+    unitsInProduction,
+    generateUnits
   };
 }

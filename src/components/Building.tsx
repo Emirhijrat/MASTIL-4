@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect } from 'react';
 import { Building as BuildingType } from '../types/gameTypes';
 import { getColorClasses } from '../utils/helpers';
 import ContextualUpgradeButton from './ContextualUpgradeButton';
@@ -6,6 +6,7 @@ import UnitAnimations from './UnitAnimation';
 import MedievalHouse from './MedievalHouse';
 import MedievalTower from './MedievalTower';
 import { useUnitAnimations } from '../hooks/useUnitAnimations';
+import { useAudio } from '../hooks/useAudio';
 
 interface BuildingProps {
   building: BuildingType;
@@ -14,6 +15,7 @@ interface BuildingProps {
   upgradeCost?: number;
   canUpgrade?: boolean;
   onUpgrade?: () => void;
+  unitsInProduction?: number;
 }
 
 const Building = forwardRef<HTMLDivElement, BuildingProps>(({ 
@@ -22,10 +24,12 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
   onClick,
   upgradeCost,
   canUpgrade,
-  onUpgrade
+  onUpgrade,
+  unitsInProduction = 0
 }, ref) => {
   // Access highlighted building IDs from the animations context
   const { highlightedSourceId, highlightedTargetId } = useUnitAnimations();
+  const { playSelectSound } = useAudio();
   
   const isSource = highlightedSourceId === building.id;
   const isTarget = highlightedTargetId === building.id;
@@ -37,6 +41,13 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
     if (selected) return 'selected';
     return '';
   };
+  
+  // Play selection sound when a building is selected
+  useEffect(() => {
+    if (selected && building.owner === 'player') {
+      playSelectSound();
+    }
+  }, [selected, building.owner, playSelectSound]);
   
   const getBuildingVisual = () => {
     if (building.owner === 'neutral') {
@@ -53,11 +64,18 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
           isSource={isSource}
           isTarget={isTarget}
           element={building.element}
+          unitCount={building.units}
+          maxUnits={building.maxUnits}
+          unitsInProduction={unitsInProduction}
         />
       );
     }
     
     return null;
+  };
+
+  const handleClick = () => {
+    onClick(building.id);
   };
 
   return (
@@ -71,7 +89,7 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
         width: 'var(--game-min-touch)',
         height: 'var(--game-min-touch)',
       }}
-      onClick={() => onClick(building.id)}
+      onClick={handleClick}
       data-id={building.id}
     >
       {/* Unit count centered above the building */}
@@ -97,6 +115,15 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
       <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[0.7rem] sm:text-sm font-medium text-white text-shadow-strong">
         Lvl {building.level}
       </span>
+      
+      {/* Production indicator for player buildings */}
+      {unitsInProduction > 0 && building.owner === 'player' && (
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center">
+          <span className="text-xs text-yellow-200 bg-black/40 px-1 py-0.5 rounded text-shadow-strong animate-pulse">
+            +{unitsInProduction}
+          </span>
+        </div>
+      )}
     </div>
   );
 });

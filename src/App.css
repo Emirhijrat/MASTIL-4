@@ -199,3 +199,20 @@ body {
   --mastil-text-muted: #64748B;
   --mastil-border: #334155;
 }
+
+/* Building highlight animations */
+@keyframes pulse-selected {
+  0% {
+    filter: drop-shadow(0 0 8px var(--mastil-accent, gold)) brightness(1.1);
+  }
+  50% {
+    filter: drop-shadow(0 0 12px var(--mastil-accent, gold)) brightness(1.3);
+  }
+  100% {
+    filter: drop-shadow(0 0 8px var(--mastil-accent, gold)) brightness(1.1);
+  }
+}
+
+.animate-pulse-selected {
+  animation: pulse-selected 2s infinite;
+}

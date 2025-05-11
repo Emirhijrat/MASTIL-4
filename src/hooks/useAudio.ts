@@ -16,6 +16,9 @@ const defaultSettings: AudioSettings = {
 
 let backgroundMusic: HTMLAudioElement | null = null;
 let attackSound: HTMLAudioElement | null = null;
+let selectSound: HTMLAudioElement | null = null;
+let deploySound: HTMLAudioElement | null = null;
+let upgradeSound: HTMLAudioElement | null = null;
 
 if (typeof window !== 'undefined') {
   try {
@@ -28,6 +31,25 @@ if (typeof window !== 'undefined') {
     attackSound = new Audio('/audio/attack_sfx.wav'); 
   } catch (e) {
     console.error("Error creating attackSound Audio object:", e);
+  }
+  try {
+    // Simple "click" sound for selection
+    selectSound = new Audio('/audio/select_sfx.wav');
+    selectSound.volume = 0.4; // Lower volume for frequent feedback
+  } catch (e) {
+    console.error("Error creating selectSound Audio object:", e);
+  }
+  try {
+    // Sound for unit deployment/sending
+    deploySound = new Audio('/audio/deploy_sfx.wav');
+  } catch (e) {
+    console.error("Error creating deploySound Audio object:", e);
+  }
+  try {
+    // Sound for successful upgrades
+    upgradeSound = new Audio('/audio/upgrade_sfx.wav');
+  } catch (e) {
+    console.error("Error creating upgradeSound Audio object:", e);
   }
 }
 
@@ -58,6 +80,15 @@ export function useAudio() {
     if (attackSound) {
       attackSound.volume = settings.sfxEnabled ? settings.masterVolume : 0;
     }
+    if (selectSound) {
+      selectSound.volume = settings.sfxEnabled ? settings.masterVolume * 0.4 : 0;
+    }
+    if (deploySound) {
+      deploySound.volume = settings.sfxEnabled ? settings.masterVolume * 0.6 : 0;
+    }
+    if (upgradeSound) {
+      upgradeSound.volume = settings.sfxEnabled ? settings.masterVolume * 0.7 : 0;
+    }
   }, [settings]);
 
   const playBackgroundMusic = useCallback(() => {
@@ -66,7 +97,7 @@ export function useAudio() {
         console.warn('Failed to play background music. Name:', error.name, 'Message:', error.message, error);
       });
     }
-  }, [settings.musicEnabled, settings.masterVolume]); // Added masterVolume as play might be affected by it indirectly
+  }, [settings.musicEnabled, settings.masterVolume]);
 
   const stopBackgroundMusic = useCallback(() => {
     if (backgroundMusic) {
@@ -82,18 +113,33 @@ export function useAudio() {
     }
   }, [settings.musicEnabled, playBackgroundMusic, stopBackgroundMusic]);
 
-  const playAttackSound = useCallback(() => {
-    if (attackSound && settings.sfxEnabled) {
-      attackSound.currentTime = 0;
-      // Check if audio context is suspended (common issue with autoplay policies)
-      if (attackSound.paused && attackSound.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-         // Attempt to resume audio context if necessary, though this is more for background music usually
+  // Helper function to play any sound effect
+  const playSoundEffect = useCallback((sound: HTMLAudioElement | null) => {
+    if (sound && settings.sfxEnabled) {
+      sound.currentTime = 0;
+      if (sound.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+        sound.play().catch(error => {
+          console.warn(`Failed to play sound effect. Name: ${error.name}, Message: ${error.message}`);
+        });
       }
-      attackSound.play().catch(error => {
-        console.warn('Failed to play attack sound. Name:', error.name, 'Message:', error.message, 'Full error:', error);
-      });
     }
-  }, [settings.sfxEnabled, settings.masterVolume]); // Added masterVolume as play might be affected by it indirectly
+  }, [settings.sfxEnabled]);
+
+  const playAttackSound = useCallback(() => {
+    playSoundEffect(attackSound);
+  }, [playSoundEffect]);
+
+  const playSelectSound = useCallback(() => {
+    playSoundEffect(selectSound);
+  }, [playSoundEffect]);
+
+  const playDeploySound = useCallback(() => {
+    playSoundEffect(deploySound);
+  }, [playSoundEffect]);
+
+  const playUpgradeSound = useCallback(() => {
+    playSoundEffect(upgradeSound);
+  }, [playSoundEffect]);
 
   const toggleMusic = useCallback(() => {
     setSettings(prev => ({ ...prev, musicEnabled: !prev.musicEnabled }));
@@ -114,6 +160,9 @@ export function useAudio() {
     toggleSfx,
     setMasterVolume,
     playAttackSound,
+    playSelectSound,
+    playDeploySound,
+    playUpgradeSound,
     playBackgroundMusic,
     stopBackgroundMusic,
   };

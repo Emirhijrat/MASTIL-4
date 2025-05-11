@@ -7,6 +7,9 @@ interface MedievalTowerProps {
   isSource?: boolean;
   isTarget?: boolean;
   element?: ElementType;
+  unitsInProduction?: number;
+  unitCount?: number;
+  maxUnits?: number;
 }
 
 const MedievalTower: React.FC<MedievalTowerProps> = ({ 
@@ -14,7 +17,10 @@ const MedievalTower: React.FC<MedievalTowerProps> = ({
   selected = false,
   isSource = false,
   isTarget = false,
-  element
+  element,
+  unitsInProduction = 0,
+  unitCount = 0,
+  maxUnits = 100
 }) => {
   // Choose colors based on owner
   const primaryColor = owner === 'player' ? 'var(--mastil-player)' : 
@@ -60,7 +66,7 @@ const MedievalTower: React.FC<MedievalTowerProps> = ({
       return 'drop-shadow(0 0 10px var(--mastil-target, #7C3AED)) brightness(1.2)';
     }
     else if (selected) {
-      return 'drop-shadow(0 0 8px var(--mastil-accent))';
+      return 'drop-shadow(0 0 12px var(--mastil-accent)) brightness(1.3)';
     }
     return 'none';
   };
@@ -69,8 +75,13 @@ const MedievalTower: React.FC<MedievalTowerProps> = ({
   const getAnimationClass = () => {
     if (isSource) return 'animate-pulse-source';
     if (isTarget) return 'animate-pulse-target';
+    if (selected && owner === 'player') return 'animate-pulse-selected';
     return '';
   };
+  
+  // Calculate unit fill level as a percentage
+  const unitFillPercentage = maxUnits > 0 ? (unitCount / maxUnits) * 100 : 0;
+  const unitFillHeight = Math.min(45, unitFillPercentage * 0.45); // Max fill height is 45
 
   return (
     <svg 
@@ -91,6 +102,31 @@ const MedievalTower: React.FC<MedievalTowerProps> = ({
         strokeWidth="2"
       />
       
+      {/* Unit fill level indicator (visible when there are units) */}
+      {unitCount > 0 && (
+        <rect
+          x="31"
+          y={80 - unitFillHeight}
+          width="38"
+          height={unitFillHeight}
+          fill={secondaryColor}
+          opacity="0.4"
+        />
+      )}
+      
+      {/* Units in production indicator (pulsing at the bottom of the tower) */}
+      {unitsInProduction > 0 && (
+        <rect
+          x="31"
+          y="75"
+          width="38"
+          height="5"
+          fill={secondaryColor}
+          opacity="0.7"
+          className="animate-pulse"
+        />
+      )}
+      
       {/* Tower top (crenellations) */}
       <path
         d="M 25,25 L 25,20 L 30,20 L 30,25 L 40,25 L 40,20 L 45,20 L 45,25 L 55,25 L 55,20 L 60,20 L 60,25 L 70,25 L 70,20 L 75,20 L 75,25"
@@ -98,6 +134,23 @@ const MedievalTower: React.FC<MedievalTowerProps> = ({
         stroke={secondaryColor}
         strokeWidth="2"
       />
+      
+      {/* Selection highlight for player towers */}
+      {selected && owner === 'player' && (
+        <rect
+          x="25"
+          y="16"
+          width="50"
+          height="68"
+          fill="none"
+          stroke="var(--mastil-accent, gold)"
+          strokeWidth="3"
+          strokeDasharray="5,3"
+          opacity="0.8"
+          rx="2"
+          ry="2"
+        />
+      )}
       
       {/* Tower base */}
       <rect
