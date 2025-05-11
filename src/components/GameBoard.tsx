@@ -20,38 +20,58 @@ import ControlBar from './ControlBar';
 import GameControls from './GameControls';
 
 interface GameBoardProps {
-  onSettings: () => void;
-  onExit: () => void;
+  buildings: Building[];
+  selectedBuildingId: string | null;
+  selectBuilding: (id: string) => void;
+  gameOver: boolean;
+  gameOverMessage: string;
+  restartGame: () => void;
+  getUpgradeCost: (building: Building) => number;
+  upgradeBuilding: (building: Building) => void;
+  playerBuildingCount: number;
+  enemyBuildingCount: number;
+  message: string;
+  showMessage: (text: string) => void;
+  onSettings?: () => void;
+  onExit?: () => void;
 }
 
 // MAX_BUILDING_LEVEL is derived from the imported gameConfig object
 const MAX_BUILDING_LEVEL = gameConfig.maxBuildingLevel || 5; 
 
-const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
+const GameBoard: React.FC<GameBoardProps> = (props) => {
   console.log('=== GAMEBOARD RENDER START ===');
   
   // Add the requested detailed logging for the received buildings prop
   console.log('[GameBoard] Received buildings prop directly from props:', { 
-    onSettings, 
-    onExit,
-    propsKeys: ['onSettings', 'onExit']
+    buildingsLength: props.buildings?.length || 0,
+    propsKeys: Object.keys(props)
   });
   
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   
+  // Use props directly instead of useGameState
   const { 
-    buildings = [], // Default to empty array if buildings is undefined
+    buildings = [], 
     selectedBuildingId, 
-    handleBuildingClick = () => {}, // Default function if not provided
-    player = { gold: 0, score: 0 },
-    getUpgradeCost = () => 0, // Default function if not provided
-    handleUpgrade = () => {}, // Default function if not provided
-    unitsInProduction = {},
-    message
-  } = useGameState() || {}; // Make sure useGameState result is not null
+    selectBuilding: handleBuildingClick, 
+    getUpgradeCost = () => 0,
+    upgradeBuilding: handleUpgrade = () => {},
+    message = "",
+    onSettings = () => {},
+    onExit = () => {}
+  } = props;
+  
+  // Create a simple player object for the StatusBar
+  const player = {
+    gold: buildings.filter(b => b.owner === 'player').reduce((sum, b) => sum + b.units, 0),
+    score: buildings.filter(b => b.owner === 'player').length * 100
+  };
+  
+  // Placeholder for units in production (can be enhanced later)
+  const unitsInProduction = {};
 
   // Comprehensive building data logging
-  console.log('[GameBoard] useGameState returned buildings:', buildings);
   console.log('[GameBoard] buildings type:', typeof buildings);
   console.log('[GameBoard] buildings is array:', Array.isArray(buildings));
   console.log('[GameBoard] buildings length:', buildings?.length || 0);
@@ -103,7 +123,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
           <StatusBar 
             playerGold={player?.gold || 0} 
             playerScore={player?.score || 0}
-            onSettingsClick={() => onSettings()}
+            onSettingsClick={onSettings}
           />
           
           <div className="flex-grow relative">
