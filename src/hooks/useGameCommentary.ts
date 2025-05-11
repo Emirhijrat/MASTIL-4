@@ -88,9 +88,11 @@ type SpeakerType = 'enemy' | 'neutral' | 'system' | 'event';
 type MessagePriority = 'high' | 'medium' | 'low';
 
 // Configuration constants
-const GLOBAL_MESSAGE_COOLDOWN = 20000; // 20 seconds minimum between any messages
-const EVENT_MESSAGE_COOLDOWN = 5000;   // 5 seconds minimum for event-based messages
+// Improved cooldown system with randomization
+const POSSIBLE_COOLDOWNS = [8000, 10000, 12000, 15000]; // Randomized cooldown times in ms
+const EVENT_MESSAGE_COOLDOWN = 4000;   // 4 seconds minimum for event-based messages
 const INITIAL_ENEMY_TAUNT_DELAY = 5000; // 5 seconds after game start before enemy taunts
+const MAX_CONSECUTIVE_SAME_SPEAKER = 2; // Maximum number of times the same speaker type can speak consecutively
 
 type GameCommentaryProps = {
   isGameActive: boolean;
@@ -123,6 +125,15 @@ export function useGameCommentary(props: GameCommentaryProps) {
   const [nextSpeakerType, setNextSpeakerType] = useState<SpeakerType>('enemy'); // Start with enemy
   const [hasPlayedInitialTaunt, setHasPlayedInitialTaunt] = useState(false);
   const [gameStartTime, setGameStartTime] = useState(0);
+  const [consecutiveSameSpeaker, setConsecutiveSameSpeaker] = useState(0);
+  
+  // Randomized cooldown duration
+  const [currentCooldown, setCurrentCooldown] = useState(POSSIBLE_COOLDOWNS[0]);
+  
+  // Get a random cooldown duration
+  const getRandomCooldown = useCallback(() => {
+    return POSSIBLE_COOLDOWNS[Math.floor(Math.random() * POSSIBLE_COOLDOWNS.length)];
+  }, []);
   
   // Initialize game start time
   useEffect(() => {
@@ -147,21 +158,22 @@ export function useGameCommentary(props: GameCommentaryProps) {
     }
     
     // Different cooldown rules based on priority
-    let requiredCooldown = GLOBAL_MESSAGE_COOLDOWN;
+    let requiredCooldown = currentCooldown;
     if (priority === 'high') {
       requiredCooldown = EVENT_MESSAGE_COOLDOWN;
     } else if (priority === 'medium') {
-      requiredCooldown = GLOBAL_MESSAGE_COOLDOWN / 2;
+      requiredCooldown = currentCooldown / 2;
     }
     
     // Check if we've waited long enough since the last message
     const hasWaitedLongEnough = now - lastMessageTime >= requiredCooldown;
     
-    // For low priority messages, also check if this is the right speaker's turn
+    // Determine if this is the correct speaker's turn with improved alternation
     const isCorrectSpeakerTurn = 
       priority === 'high' || // High priority messages bypass turn order
       speakerType === 'event' || // Event messages bypass turn order
-      speakerType === nextSpeakerType; // Otherwise, check turn order
+      speakerType === nextSpeakerType || // Is it this speaker's scheduled turn?
+      (consecutiveSameSpeaker >= MAX_CONSECUTIVE_SAME_SPEAKER && speakerType !== nextSpeakerType); // Force alternation
     
     // Only show the message if conditions are met
     if (hasWaitedLongEnough && isCorrectSpeakerTurn) {
@@ -171,16 +183,44 @@ export function useGameCommentary(props: GameCommentaryProps) {
       // Update state
       setLastMessageTime(now);
       
-      // Set the next speaker type (alternating)
-      if (speakerType !== 'event') { // Don't change turns for event messages
-        setNextSpeakerType(speakerType === 'enemy' ? 'neutral' : 'enemy');
+      // Set a new random cooldown duration for variety
+      setCurrentCooldown(getRandomCooldown());
+      
+      // Handle speaker alternation logic
+      if (speakerType !== 'event' && speakerType !== 'system') {
+        if (speakerType === nextSpeakerType) {
+          // Same speaker again - increase consecutive counter
+          setConsecutiveSameSpeaker(prev => prev + 1);
+        } else {
+          // Different speaker - reset counter
+          setConsecutiveSameSpeaker(0);
+        }
+        
+        // Set the next speaker type - improved alternation logic
+        if (consecutiveSameSpeaker >= MAX_CONSECUTIVE_SAME_SPEAKER - 1) {
+          // Force alternation when the same speaker has spoken too many times
+          setNextSpeakerType(speakerType === 'enemy' ? 'neutral' : 'enemy');
+        } else {
+          // Randomize next speaker with bias towards alternation
+          const shouldAlternate = Math.random() < 0.7; // 70% chance to alternate speakers
+          setNextSpeakerType(shouldAlternate ? (speakerType === 'enemy' ? 'neutral' : 'enemy') : speakerType);
+        }
       }
       
       return true; // Message was displayed
     }
     
     return false; // Message was not displayed
-  }, [isGameActive, isPaused, lastMessageTime, nextSpeakerType, showMessage]);
+  }, [
+    isGameActive, 
+    isPaused, 
+    lastMessageTime, 
+    currentCooldown, 
+    nextSpeakerType, 
+    consecutiveSameSpeaker, 
+    showMessage, 
+    getRandomCooldown
+  ]);
 
   // Get random enemy comment
   const getRandomEnemyComment = useCallback(() => {
@@ -222,7 +262,7 @@ export function useGameCommentary(props: GameCommentaryProps) {
       // Only play the initial taunt after a short delay
       if (now - gameStartTime >= INITIAL_ENEMY_TAUNT_DELAY) {
         const taunt = getRandomEnemyComment();
-        displayMessage(taunt, 'enemy', 'high');
+        displayMessage(taunt, 'enemy', 'high', 'Feindlicher Kommandant', '#ef4444');
         setHasPlayedInitialTaunt(true);
       }
     }
@@ -234,63 +274,76 @@ export function useGameCommentary(props: GameCommentaryProps) {
     
     // Handle specific events with high priority
     if (gameEvents.playerCapturedBuilding) {
-      displayMessage("Unsere Truppen haben ein neues Gebiet eingenommen!", 'event', 'high', "Bote");
+      displayMessage("Unsere Truppen haben ein neues Gebiet eingenommen!", 'event', 'high', "Bote", "#3b82f6");
     } else if (gameEvents.playerLostBuilding) {
-      displayMessage("Der Feind hat eines unserer Gebiete erobert!", 'event', 'high', "Wachposten");
+      displayMessage("Der Feind hat eines unserer Gebiete erobert!", 'event', 'high', "Wachposten", "#f97316");
     } else if (gameEvents.enemyCapturedBuilding) {
-      displayMessage("Der Feind breitet sich weiter aus, mein Herr.", 'event', 'high', "Späher");
+      displayMessage("Der Feind breitet sich weiter aus, mein Herr.", 'event', 'high', "Späher", "#a3a3a3");
     }
   }, [gameEvents, isGameActive, isPaused, displayMessage]);
 
-  // Regular enemy comments
+  // Combined effect for enemy and neutral comments to ensure better alternation
   useEffect(() => {
     if (!isGameActive || isPaused) return;
     
-    const enemyInterval = setInterval(() => {
-      if (nextSpeakerType === 'enemy' && Math.random() < 0.5) {
-        const comment = getRandomEnemyComment();
-        displayMessage(comment, 'enemy', 'low');
+    const commentInterval = setInterval(() => {
+      // Determine whether to attempt a comment based on the current state
+      const shouldAttemptComment = Math.random() < 0.3; // 30% chance to attempt a comment in each interval
+      
+      if (shouldAttemptComment) {
+        // If it's the enemy's turn or we need to force alternation
+        if (nextSpeakerType === 'enemy' || consecutiveSameSpeaker >= MAX_CONSECUTIVE_SAME_SPEAKER) {
+          const comment = getRandomEnemyComment();
+          displayMessage(comment, 'enemy', 'low', 'Feindlicher Kommandant', '#ef4444');
+        } 
+        // If it's the neutral's turn
+        else if (nextSpeakerType === 'neutral') {
+          const comment = getRandomNeutralComment();
+          displayMessage(comment, 'neutral', 'low');
+        }
       }
-    }, 15000); // Check every 15 seconds if it's enemy's turn
+    }, 8000); // Check regularly, but actual display will be controlled by cooldown logic
     
-    return () => clearInterval(enemyInterval);
-  }, [isGameActive, isPaused, nextSpeakerType, displayMessage, getRandomEnemyComment]);
-
-  // Regular neutral observer comments
-  useEffect(() => {
-    if (!isGameActive || isPaused) return;
-    
-    const neutralInterval = setInterval(() => {
-      if (nextSpeakerType === 'neutral' && Math.random() < 0.5) {
-        const comment = getRandomNeutralComment();
-        displayMessage(comment, 'neutral', 'low');
-      }
-    }, 15000); // Check every 15 seconds if it's neutral's turn
-    
-    return () => clearInterval(neutralInterval);
-  }, [isGameActive, isPaused, nextSpeakerType, displayMessage, getRandomNeutralComment]);
+    return () => clearInterval(commentInterval);
+  }, [
+    isGameActive, 
+    isPaused, 
+    nextSpeakerType, 
+    consecutiveSameSpeaker, 
+    displayMessage, 
+    getRandomEnemyComment, 
+    getRandomNeutralComment
+  ]);
 
   // Public API for the hook - allows forcing comments from outside
   const forceComment = useCallback((speakerType: SpeakerType = 'system') => {
     if (!isGameActive || isPaused) return;
     
     let comment = '';
+    let speakerName: string | undefined;
+    let speakerColor: string | undefined;
+    
     if (speakerType === 'enemy') {
       comment = getRandomEnemyComment();
+      speakerName = 'Feindlicher Kommandant';
+      speakerColor = '#ef4444';
     } else if (speakerType === 'neutral') {
       comment = getRandomNeutralComment();
+      // Neutral speakers have their name in the comment string
     } else {
       // For system, select randomly between enemy and neutral
       if (Math.random() < 0.5) {
         comment = getRandomEnemyComment();
         speakerType = 'enemy';
+        speakerName = 'Feindlicher Kommandant';
+        speakerColor = '#ef4444';
       } else {
         comment = getRandomNeutralComment();
         speakerType = 'neutral';
       }
     }
     
-    displayMessage(comment, speakerType, 'medium');
+    displayMessage(comment, speakerType, 'medium', speakerName, speakerColor);
   }, [isGameActive, isPaused, displayMessage, getRandomEnemyComment, getRandomNeutralComment]);
 
   // Public method to check if a message can be displayed
@@ -298,16 +351,16 @@ export function useGameCommentary(props: GameCommentaryProps) {
     if (!isGameActive || isPaused) return false;
     
     const now = Date.now();
-    let requiredCooldown = GLOBAL_MESSAGE_COOLDOWN;
+    let requiredCooldown = currentCooldown;
     
     if (priority === 'high') {
       requiredCooldown = EVENT_MESSAGE_COOLDOWN;
     } else if (priority === 'medium') {
-      requiredCooldown = GLOBAL_MESSAGE_COOLDOWN / 2;
+      requiredCooldown = currentCooldown / 2;
     }
     
     return now - lastMessageTime >= requiredCooldown;
-  }, [isGameActive, isPaused, lastMessageTime]);
+  }, [isGameActive, isPaused, lastMessageTime, currentCooldown]);
 
   return { 
     forceComment,

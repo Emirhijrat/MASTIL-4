@@ -78,6 +78,13 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
     onClick(building.id);
   };
 
+  // Determine if the upgrade button should be visible
+  const shouldShowUpgradeButton = 
+    selected && 
+    building.owner === 'player' && 
+    typeof upgradeCost === 'number' && 
+    typeof onUpgrade === 'function';
+
   return (
     <div 
       ref={ref}
@@ -97,12 +104,14 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
         {building.units}
       </span>
 
-      {selected && building.owner === 'player' && upgradeCost !== undefined && onUpgrade && (
+      {/* Contextual Upgrade Button - add isVisible prop */}
+      {shouldShowUpgradeButton && (
         <ContextualUpgradeButton
           building={building}
-          upgradeCost={upgradeCost}
-          canUpgrade={canUpgrade || false}
-          onUpgrade={onUpgrade}
+          isVisible={shouldShowUpgradeButton}
+          upgradeCost={upgradeCost!}
+          canUpgrade={Boolean(canUpgrade)}
+          onUpgrade={onUpgrade!}
         />
       )}
 
