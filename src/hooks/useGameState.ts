@@ -218,22 +218,31 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
 
       // Initialize buildings with player and AI elements
       console.log('[useGameState] About to call initializeBuildings with:', { element, assignedAiElement });
-      const success = initializeBuildings(element, assignedAiElement);
       
-      // Überprüfen, ob die Initialisierung erfolgreich war, und nochmals in die Konsole ausgeben
-      console.log('[useGameState] initializeBuildings result:', success, 'current buildings length:', buildings.length);
-      
-      // Failsafe: Wenn keine Gebäude initialisiert wurden, trotz "success" = true, erneut versuchen
-      if (success && buildings.length === 0) {
-        console.warn('[useGameState] Buildings array is empty despite successful initialization, retrying...');
+      // WICHTIG: Direkter Initialisierungsversuch mit Verzögerung zum Debuggen
+      setTimeout(() => {
+        const initResult = initializeBuildings(element, assignedAiElement);
+        console.log('[useGameState] initializeBuildings result:', initResult.success, 
+                    'returned buildings length:', initResult.buildings.length,
+                    'current state buildings length:', buildings.length);
         
-        // Verzögerte zweite Initialisierung
-        setTimeout(() => {
-          console.log('[useGameState] Retry initialization with:', { element, assignedAiElement });
-          const retrySuccess = initializeBuildings(element, assignedAiElement);
-          console.log('[useGameState] Retry initializeBuildings result:', retrySuccess, 'buildings after retry:', buildings.length);
-        }, 500);
-      }
+        // Falls die Gebäude zwar zurückgegeben wurden, aber nicht im State gelandet sind
+        if (initResult.success && initResult.buildings.length > 0 && buildings.length === 0) {
+          console.warn('[useGameState] Buildings returned but not in state, forcing direct set...');
+          
+          // Direkte Aktualisierung des States mit den zurückgegebenen Gebäuden
+          setBuildings(initResult.buildings);
+          
+          // Doppelte Sicherheit mit Überprüfung nach kurzer Zeit
+          setTimeout(() => {
+            console.log('[useGameState] Checking buildings after direct set:', buildings.length);
+            if (buildings.length === 0 && initResult.buildings.length > 0) {
+              console.warn('[useGameState] Still no buildings in state, forcing another set...');
+              setBuildings(initResult.buildings);
+            }
+          }, 300);
+        }
+      }, 100);
       
       // Store game start time
       localStorage.setItem('gameStartTime', Date.now().toString());
@@ -246,7 +255,7 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       showMessage(`Majestät ${name}, mögen Eure ${element}-Kräfte den Feind bezwingen!`);
       
       console.log('=== PLAYER SETUP COMPLETE ===');
-      return success;
+      return true;
     } catch (error) {
       console.error('[useGameState] ERROR in handlePlayerSetup:', error);
       return false;

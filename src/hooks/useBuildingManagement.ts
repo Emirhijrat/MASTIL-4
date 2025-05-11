@@ -166,15 +166,31 @@ export function useBuildingManagement(config: GameConfig) {
       console.log('[handlePlayerSetup] Mapped newBuildings PRE-SET:', JSON.stringify(newBuildings.map(b => ({ id: b.id, owner: b.owner, units: b.units }))));
       console.log('[handlePlayerSetup] Calling setBuildings with newBuildings.');
       
-      setBuildings(newBuildings);
-      console.log('[useBuildingManagement] setBuildings called with new buildings array');
+      // WICHTIG: Sofortige Aktualisierung erzwingen
+      setBuildings(prevBuildings => {
+        // Prüfen, ob es bereits Gebäude gibt
+        if (prevBuildings.length > 0) {
+          console.log('[useBuildingManagement] Buildings already exist, not overwriting');
+          return prevBuildings;
+        }
+        
+        console.log('[useBuildingManagement] Setting buildings array to', newBuildings.length, 'buildings');
+        return newBuildings;
+      });
       
-      return true;
+      // Lösung für das Race-Condition-Problem: Direkte Rückgabe eines Objekts mit den neuen Gebäuden
+      return {
+        success: true,
+        buildings: newBuildings
+      };
     } catch (error) {
       console.error('[useBuildingManagement] ERROR initializing buildings:', error);
-      return false;
+      return {
+        success: false,
+        buildings: []
+      };
     }
-  }, [config.maxUnitsPerBuilding, buildings]);
+  }, [config.maxUnitsPerBuilding]);
   
   // Generate units for player and enemy buildings
   const setupBuildingUnitGeneration = useCallback((

@@ -203,13 +203,16 @@ function App() {
               // Setzen wir den Bildschirm zuerst auf 'loading'
               setCurrentScreen('loading');
               
-              // Führe handlePlayerSetup aus
+              // Führe handlePlayerSetup aus und zeige eine Nachricht an
               const success = handlePlayerSetup(name, element);
               console.log('[App] handlePlayerSetup returned:', success);
               
+              // Informiere den Benutzer über die Initialisierung
+              showMessage("Das Spiel wird initialisiert. Bitte einen Moment Geduld...");
+              
               // Funktion zum Überprüfen, ob die Gebäude initialisiert wurden
               let attempts = 0;
-              const maxAttempts = 15;
+              const maxAttempts = 20;
               
               const checkBuildingsInitialized = () => {
                 attempts++;
@@ -222,10 +225,12 @@ function App() {
                 } else if (attempts < maxAttempts) {
                   // Gebäude wurden noch nicht initialisiert, erneut versuchen
                   console.warn('[App] Buildings not initialized properly, retrying...');
-                  if (attempts === 5) {
-                    // Informiere den Benutzer über die Verzögerung
-                    showMessage("Das Spiel wird initialisiert. Bitte haben Sie einen Moment Geduld...");
+                  
+                  // Bei längerem Warten ein Update geben
+                  if (attempts === 10) {
+                    showMessage("Initialisierung läuft weiter. Danke für Ihre Geduld.");
                   }
+                  
                   setTimeout(checkBuildingsInitialized, 1000);
                 } else {
                   // Maximale Anzahl von Versuchen erreicht, Neustart des Spiels
@@ -237,7 +242,8 @@ function App() {
               };
               
               // Warten Sie eine Weile und starten Sie dann die Überprüfung
-              setTimeout(checkBuildingsInitialized, 500);
+              // Längere anfängliche Wartezeit, um den Hooks Zeit zu geben
+              setTimeout(checkBuildingsInitialized, 1500);
             }} 
           />
         </div>
