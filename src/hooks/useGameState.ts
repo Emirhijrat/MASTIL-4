@@ -5,6 +5,7 @@ import { useAudio } from './useAudio';
 import { handleAIEvent, getRandomMessage, makeAIDecision } from '../ai/enemyAI';
 import { useBuildingManagement } from './useBuildingManagement';
 import { useNeutralBehavior } from './useNeutralBehavior';
+import { useGameCommentary } from './useGameCommentary';
 
 export function useGameState(config: GameConfig) {
   // Player state
@@ -18,6 +19,32 @@ export function useGameState(config: GameConfig) {
   const [aiElement, setAiElement] = useState<ElementType | null>(null);
   // Add pause state
   const [isPaused, setIsPaused] = useState(false);
+
+  // Game events for commentary system
+  const [gameEvents, setGameEvents] = useState({
+    playerCapturedBuilding: false,
+    playerLostBuilding: false,
+    enemyCapturedBuilding: false,
+    enemyLostBuilding: false,
+    combatOccurring: false
+  });
+  
+  // Reset game events after they've been processed
+  useEffect(() => {
+    if (Object.values(gameEvents).some(value => value === true)) {
+      const resetTimer = setTimeout(() => {
+        setGameEvents({
+          playerCapturedBuilding: false,
+          playerLostBuilding: false,
+          enemyCapturedBuilding: false,
+          enemyLostBuilding: false,
+          combatOccurring: false
+        });
+      }, 1000);
+      
+      return () => clearTimeout(resetTimer);
+    }
+  }, [gameEvents]);
 
   // Track popup state changes
   const prevShowPlayerInputPopupRef = useRef<boolean>(showPlayerInputPopup);
@@ -66,11 +93,26 @@ export function useGameState(config: GameConfig) {
   const { startUnitAnimation } = useUnitAnimationDispatch();
   const { playAttackSound, playBackgroundMusic, stopBackgroundMusic } = useAudio();
 
-  // Message display logic
-  const showMessage = useCallback((text: string) => {
-    setMessage(text);
-    setTimeout(() => setMessage(null), 3000);
+  // Enhanced message display logic with speaker information
+  const showMessage = useCallback((text: string, speaker?: string, speakerColor?: string) => {
+    // Format message with speaker if provided
+    const formattedMessage = speaker ? `${speaker}: ${text}` : text;
+    setMessage(formattedMessage);
+    
+    // Higher timeout for comments to give players time to read
+    const messageTimeout = speaker ? 5000 : 3000;
+    setTimeout(() => setMessage(null), messageTimeout);
   }, []);
+  
+  // Initialize the commentary system
+  const { forceComment } = useGameCommentary({
+    isGameActive: !showPlayerInputPopup && !gameOver,
+    isPaused,
+    playerBuildingCount: buildings.filter(b => b.owner === 'player').length,
+    enemyBuildingCount: buildings.filter(b => b.owner === 'enemy').length,
+    showMessage,
+    gameEvents
+  });
 
   // Wrap the base upgrade function
   const upgradeBuilding = useCallback((buildingToUpgrade: Building) => {
@@ -79,10 +121,31 @@ export function useGameState(config: GameConfig) {
     upgradeBuildingBase(buildingToUpgrade, showPlayerInputPopup, showMessage);
   }, [upgradeBuildingBase, showPlayerInputPopup, showMessage, isPaused]);
 
-  // Wrap the base handleUnitsArrival function
+  // Wrap the base handleUnitsArrival function with event tracking
   const handleUnitsArrival = useCallback((targetId: string, numUnits: number, attackerOwner: OwnerType) => {
+    // Find target building
+    const targetBuilding = buildings.find(b => b.id === targetId);
+    if (!targetBuilding) return;
+    
+    const prevOwner = targetBuilding.owner;
+    
+    // Update building via base function
     handleUnitsArrivalBase(targetId, numUnits, attackerOwner, showMessage, handleAIEvent);
-  }, [handleUnitsArrivalBase, showMessage]);
+    
+    // Track ownership changes for commentary
+    if (prevOwner !== attackerOwner) {
+      if (attackerOwner === 'player') {
+        // Player captured a building
+        setGameEvents(prev => ({ ...prev, playerCapturedBuilding: true }));
+      } else if (attackerOwner === 'enemy' && prevOwner === 'player') {
+        // Player lost a building to enemy
+        setGameEvents(prev => ({ ...prev, playerLostBuilding: true }));
+      } else if (attackerOwner === 'enemy' && prevOwner === 'neutral') {
+        // Enemy captured a neutral building
+        setGameEvents(prev => ({ ...prev, enemyCapturedBuilding: true }));
+      }
+    }
+  }, [buildings, handleUnitsArrivalBase, showMessage]);
 
   // Send units from one building to another
   const sendUnits = useCallback((source: Building, target: Building) => {
@@ -94,6 +157,9 @@ export function useGameState(config: GameConfig) {
     }
     const unitsToSend = Math.floor(source.units * 0.5);
     setBuildings(prevBuildings => prevBuildings.map(b => b.id === source.id ? { ...b, units: b.units - unitsToSend } : b));
+    
+    // Set combat occurring for commentary
+    setGameEvents(prev => ({ ...prev, combatOccurring: true }));
     
     playAttackSound();
     startUnitAnimation(source, target, unitsToSend, source.owner, handleUnitsArrival);
@@ -209,6 +275,13 @@ export function useGameState(config: GameConfig) {
     setSelectedBuildingId(null); 
     setMessage(null);
     setIsPaused(false);
+    setGameEvents({
+      playerCapturedBuilding: false,
+      playerLostBuilding: false,
+      enemyCapturedBuilding: false,
+      enemyLostBuilding: false,
+      combatOccurring: false
+    });
     console.log("[useGameState restartGame] Setting showPlayerInputPopup to true.");
     setShowPlayerInputPopup(true);
   }, [stopBackgroundMusic, setBuildings]);
@@ -278,5 +351,7 @@ export function useGameState(config: GameConfig) {
     restartGame, 
     getUpgradeCost: calculateUpgradeCost, 
     handlePlayerSetup,
+    // Force a commentary message for testing
+    forceComment
   };
 }

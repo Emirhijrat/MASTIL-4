@@ -75,7 +75,8 @@ function App() {
     playerBuildingCount,
     enemyBuildingCount,
     isPaused,
-    togglePause
+    togglePause,
+    forceComment
   } = useGameState(gameConfig);
 
   // Handle start screen actions
@@ -239,6 +240,7 @@ function App() {
                 setCurrentScreen('start');
               }
             }}
+            onForceComment={forceComment}
           />
           
           <GameBoard
@@ -280,7 +282,31 @@ function App() {
         
         {message && !gameOver && !isPaused && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-700 text-white px-4 py-2 rounded shadow-lg z-[2500]">
-            {message}
+            {message.includes(': ') ? (
+              // Handle colorized speaker format
+              <>
+                <span 
+                  className="font-bold" 
+                  style={{ 
+                    color: message.split(': ')[0].includes('Feindlicher') 
+                      ? '#9D202F' // Enemy color
+                      : message.split(': ')[0].includes('Dorfbewohner')
+                        ? '#A6A29A' // Villager color
+                        : message.split(': ')[0].includes('Händler')
+                          ? '#D4AF37' // Merchant color
+                          : message.split(': ')[0].includes('Reisender')
+                            ? '#8E9A5D' // Traveler color
+                            : undefined
+                  }}
+                >
+                  {message.split(': ')[0]}
+                </span>
+                <span>: {message.split(': ').slice(1).join(': ')}</span>
+              </>
+            ) : (
+              // Regular message without speaker
+              message
+            )}
           </div>
         )}
       </div>
