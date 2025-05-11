@@ -85,8 +85,6 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
     gameEvents
   });
 
-  // ----- All useCallback functions -----
-  
   // Enhanced message display logic with speaker information
   const showMessage = useCallback((text: string, speaker?: string, speakerColor?: string) => {
     // Format message with speaker if provided
@@ -98,6 +96,27 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
     setTimeout(() => setMessage(null), messageTimeout);
   }, []);
 
+  // Verwende useNeutralBehavior direkt auf oberster Ebene, nicht in einem useEffect
+  useNeutralBehavior({
+    buildings,
+    setBuildings,
+    gameOver,
+    showPlayerInputPopup,
+    showMessage,
+    config: gameConfig,
+    startUnitAnimation,
+    handleUnitsArrival: (targetId, numUnits, attackerOwner) => {
+      handleUnitsArrivalBase(targetId, numUnits, attackerOwner, showMessage, 
+        (eventType, showMsg) => handleAIEvent(eventType, showMsg, displayMessage)
+      );
+    },
+    isPaused,
+    canDisplayMessage,
+    displayMessage
+  });
+
+  // ----- All useCallback functions -----
+  
   // Wrap the base upgrade function
   const upgradeBuilding = useCallback((buildingToUpgrade: Building) => {
     // Don't allow upgrades when paused
@@ -476,26 +495,6 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       console.error('[useGameState] ERROR in buildings state effect:', error);
     }
   }, [buildings, showPlayerInputPopup, playerElement, aiElement]);
-  
-  // Set up neutral behavior - pass isPaused flag and commentary functions
-  useEffect(() => {
-    // Wrap in useEffect to ensure it's only executed once
-    useNeutralBehavior({
-      buildings,
-      setBuildings,
-      gameOver,
-      showPlayerInputPopup,
-      showMessage,
-      config: gameConfig,
-      startUnitAnimation,
-      handleUnitsArrival,
-      isPaused,
-      canDisplayMessage,
-      displayMessage
-    });
-    // Dependencies intentionally empty to run only once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Setup building unit generation for player and enemy
   useEffect(() => {
