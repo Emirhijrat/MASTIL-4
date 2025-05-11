@@ -13,7 +13,9 @@ const StartScreen: React.FC<StartScreenProps> = ({
 }) => {
   const version = "Version 1.0.4";
   const gameTitle = "MASTIL";
-  const subtitle = "Medieval Autonomous Strategy Territorial Interactive Lineage";
+  const subtitle = "Interaktive Mittelalter-Strategie um Territorien und Dynastien";
+  const quote = "Der Schatten meiner Armee ist der Vorbote eures Untergangs.";
+  const attribution = "— Der Dunkle Kriegsherr";
 
   return (
     <div 
@@ -38,7 +40,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
       <div className="absolute inset-0 bg-black/30" />
 
       {/* Game Title with medieval styling */}
-      <div className="relative z-10 flex flex-col items-center mb-12 mt-20">
+      <div className="relative z-10 flex flex-col items-center mb-8 mt-16">
         <h1 className="text-6xl md:text-7xl font-bold text-[#FFDB58] tracking-wider mb-3"
             style={{ 
               textShadow: '0 0 10px rgba(255, 219, 88, 0.6), 0 0 20px rgba(255, 219, 88, 0.4)', 
@@ -46,9 +48,23 @@ const StartScreen: React.FC<StartScreenProps> = ({
             }}>
           {gameTitle}
         </h1>
-        <p className="text-sm md:text-base text-amber-200 text-center max-w-md px-4">
+        <p className="text-sm md:text-base text-amber-200 text-center max-w-md px-4 mb-3">
           {subtitle}
         </p>
+        
+        {/* Added quote with medieval styling */}
+        <div className="text-center max-w-lg px-4 mt-2">
+          <p className="text-sm md:text-base text-amber-100/90 italic" 
+             style={{ 
+               fontFamily: 'serif',
+               textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)'
+             }}>
+            "{quote}"
+          </p>
+          <p className="text-xs md:text-sm text-amber-100/70 mt-1">
+            {attribution}
+          </p>
+        </div>
       </div>
 
       {/* Menu buttons with medieval style */}
