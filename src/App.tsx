@@ -109,6 +109,65 @@ function App() {
     console.log('Settings saved:', settings);
   };
 
+  // Prüfe auf ausstehende Initialisierung nach einem Seiten-Reload
+  useEffect(() => {
+    try {
+      const pendingInitString = localStorage.getItem('pendingInitialization');
+      if (pendingInitString) {
+        console.log('[App] Found pending initialization in localStorage');
+        
+        // Parsen der gespeicherten Daten
+        const pendingInit = JSON.parse(pendingInitString);
+        
+        // Prüfen, ob die Daten nicht zu alt sind (max. 30 Sekunden)
+        const now = Date.now();
+        const isValid = pendingInit && 
+                       pendingInit.playerName && 
+                       pendingInit.playerElement && 
+                       pendingInit.timestamp && 
+                       (now - pendingInit.timestamp < 30000);
+        
+        if (isValid) {
+          console.log('[App] Valid pending initialization, attempting to resume');
+          
+          // Lösche die ausstehende Initialisierung
+          localStorage.removeItem('pendingInitialization');
+          
+          // Starte die Initialisierung direkt
+          setCurrentScreen('loading');
+          showMessage("Initialisierung wird fortgesetzt...");
+          
+          // Verzögerung, um sicherzustellen, dass der Kontext geladen ist
+          setTimeout(() => {
+            console.log('[App] Resuming initialization with:', pendingInit);
+            const success = handlePlayerSetup(pendingInit.playerName, pendingInit.playerElement);
+            
+            // Nach der Initialisierung zum Spiel wechseln
+            setTimeout(() => {
+              if (buildings.length > 0) {
+                console.log('[App] Resumed game initialization successful');
+                setCurrentScreen('gameplay');
+              } else {
+                console.error('[App] Resume failed, buildings not initialized');
+                alert('Die Initialisierung konnte nicht fortgesetzt werden. Bitte versuchen Sie es erneut.');
+                localStorage.removeItem('pendingInitialization');
+                restartGame();
+                setCurrentScreen('start');
+              }
+            }, 4000);
+          }, 1000);
+        } else {
+          // Ungültige oder abgelaufene Daten
+          console.log('[App] Invalid or expired pending initialization, removing');
+          localStorage.removeItem('pendingInitialization');
+        }
+      }
+    } catch (error) {
+      console.error('[App] Error checking for pending initialization:', error);
+      localStorage.removeItem('pendingInitialization');
+    }
+  }, [handlePlayerSetup, buildings, setCurrentScreen, showMessage, restartGame]);
+
   // Apply theme
   useEffect(() => {
     try {
@@ -203,47 +262,50 @@ function App() {
               // Setzen wir den Bildschirm zuerst auf 'loading'
               setCurrentScreen('loading');
               
-              // Führe handlePlayerSetup aus und zeige eine Nachricht an
-              const success = handlePlayerSetup(name, element);
-              console.log('[App] handlePlayerSetup returned:', success);
-              
-              // Informiere den Benutzer über die Initialisierung
-              showMessage("Das Spiel wird initialisiert. Bitte einen Moment Geduld...");
-              
-              // Funktion zum Überprüfen, ob die Gebäude initialisiert wurden
-              let attempts = 0;
-              const maxAttempts = 20;
-              
-              const checkBuildingsInitialized = () => {
-                attempts++;
-                console.log(`[App] Checking buildings initialization (attempt ${attempts}/${maxAttempts}):`, buildings.length);
+              // Direkte Steuerung der Initialisierung
+              try {
+                // Sofort Nachricht anzeigen
+                showMessage("Das Spiel wird initialisiert. Bitte einen Moment Geduld...");
                 
-                if (buildings.length > 0) {
-                  // Gebäude wurden initialisiert, wechseln zum Gameplay-Bildschirm
-                  console.log('[App] Buildings initialized successfully, changing to gameplay screen');
-                  setCurrentScreen('gameplay');
-                } else if (attempts < maxAttempts) {
-                  // Gebäude wurden noch nicht initialisiert, erneut versuchen
-                  console.warn('[App] Buildings not initialized properly, retrying...');
+                // Führe handlePlayerSetup aus
+                const success = handlePlayerSetup(name, element);
+                console.log('[App] handlePlayerSetup returned:', success);
+                
+                // Direkte Verzögerung vor dem Wechsel zum Gameplay
+                setTimeout(() => {
+                  console.log('[App] Direct transition to gameplay after delay, buildings:', buildings.length);
                   
-                  // Bei längerem Warten ein Update geben
-                  if (attempts === 10) {
-                    showMessage("Initialisierung läuft weiter. Danke für Ihre Geduld.");
+                  if (buildings.length > 0) {
+                    // Wir haben Gebäude, können zum Spiel wechseln
+                    setCurrentScreen('gameplay');
+                  } else {
+                    // Letzter Versuch mit direkter Initialisierung
+                    console.warn('[App] No buildings after delay, attempting direct initialization');
+                    // Dies ist ein außergewöhnlicher Ansatz, um das Problem zu umgehen
+                    if (typeof window !== 'undefined') {
+                      // Wir setzen ein Flag im localStorage
+                      localStorage.setItem('pendingInitialization', JSON.stringify({
+                        playerName: name,
+                        playerElement: element,
+                        timestamp: Date.now()
+                      }));
+                      
+                      // Seite neu laden
+                      window.location.reload();
+                    } else {
+                      // Fallback zum alten Verhalten
+                      alert('Fehler bei der Spielinitialisierung. Das Spiel wird neu gestartet.');
+                      restartGame();
+                      setCurrentScreen('start');
+                    }
                   }
-                  
-                  setTimeout(checkBuildingsInitialized, 1000);
-                } else {
-                  // Maximale Anzahl von Versuchen erreicht, Neustart des Spiels
-                  console.error('[App] Max initialization attempts reached, restarting game');
-                  alert('Fehler bei der Spielinitialisierung. Das Spiel wird neu gestartet.');
-                  restartGame();
-                  setCurrentScreen('start');
-                }
-              };
-              
-              // Warten Sie eine Weile und starten Sie dann die Überprüfung
-              // Längere anfängliche Wartezeit, um den Hooks Zeit zu geben
-              setTimeout(checkBuildingsInitialized, 1500);
+                }, 5000); // 5 Sekunden warten
+              } catch (error) {
+                console.error('[App] Critical error during initialization:', error);
+                alert('Kritischer Fehler bei der Spielinitialisierung. Das Spiel wird neu gestartet.');
+                restartGame();
+                setCurrentScreen('start');
+              }
             }} 
           />
         </div>
