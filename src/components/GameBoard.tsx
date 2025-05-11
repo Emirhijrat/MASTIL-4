@@ -15,29 +15,22 @@ import MessageBox from './MessageBox';
 import SettingsPanel from './SettingsPanel';
 import DebugOverlay from './DebugOverlay';
 import ErrorBoundary from './ErrorBoundary';
+import Building from './Building';
+import ControlBar from './ControlBar';
+import GameControls from './GameControls';
 
 interface GameBoardProps {
-  buildings: Building[];
-  selectedBuildingId: string | null;
-  selectBuilding: (id: string) => void;
-  gameOver: boolean;
-  gameOverMessage: string;
-  restartGame: () => void;
-  getUpgradeCost: (building: Building) => number;
-  upgradeBuilding: (building: Building) => void;
-  playerBuildingCount: number;
-  enemyBuildingCount: number;
-  message: string;
-  showMessage: (message: string) => void;
+  onSettings: () => void;
+  onExit: () => void;
 }
 
 // MAX_BUILDING_LEVEL is derived from the imported gameConfig object
 const MAX_BUILDING_LEVEL = gameConfig.maxBuildingLevel || 5; 
 
-const GameBoard: React.FC<GameBoardProps> = (props) => {
+const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
   console.log('=== GAMEBOARD RENDER START ===');
-  console.log('GameBoard.tsx rendering with buildings count:', props.buildings.length);
-  console.log('Buildings data:', JSON.stringify(props.buildings.map(b => ({
+  console.log('GameBoard.tsx rendering with buildings count:', buildings.length);
+  console.log('Buildings data:', JSON.stringify(buildings.map(b => ({
     id: b.id,
     owner: b.owner,
     units: b.units,
@@ -47,6 +40,16 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
   
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   
+  const { 
+    buildings, 
+    selectedBuildingId, 
+    handleBuildingClick, 
+    player, 
+    getUpgradeCost, 
+    handleUpgrade,
+    unitsInProduction
+  } = useGameState();
+
   useEffect(() => {
     console.log('[GameBoard.tsx] Component mounted.');
     return () => console.log('[GameBoard.tsx] Component unmounted.');
@@ -54,14 +57,13 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
 
   useEffect(() => {
     console.log('=== GAMEBOARD STATE UPDATE ===');
-    console.log('buildings:', props.buildings.map(b => ({ 
+    console.log('buildings:', buildings.map(b => ({ 
       id: b.id, 
       owner: b.owner,
       element: b.element 
     })));
-    console.log('selectedBuildingId:', props.selectedBuildingId);
-    console.log('gameOver:', props.gameOver);
-  }, [props.buildings, props.selectedBuildingId, props.gameOver]);
+    console.log('selectedBuildingId:', selectedBuildingId);
+  }, [buildings, selectedBuildingId]);
 
   const handleCoordinateUpdate = (fieldId: string, x: number, y: number) => {
     console.log(`Coordinate update for ${fieldId}: x=${x}, y=${y}`);
@@ -76,34 +78,61 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
     <ErrorBoundary>
       <div className={`w-full h-full max-w-[min(90vh,800px)] aspect-[4/3] sm:aspect-[16/9] 
                       rounded-xl shadow-2xl overflow-hidden flex flex-col 
-                      border border-[var(--mastil-border)] touch-manipulation game-board
-                      ${props.gameOver ? 'opacity-70 pointer-events-none' : ''}`}>
+                      border border-[var(--mastil-border)] touch-manipulation game-board`}>
         <StatusBar 
-          playerBuildingCount={props.playerBuildingCount} 
-          enemyBuildingCount={props.enemyBuildingCount}
-          onOpenSettings={() => setIsSettingsPanelOpen(true)}
+          playerGold={player.gold} 
+          playerScore={player.score}
+          onSettingsClick={() => onSettings()}
         />
         
         <div className="flex-grow relative">
           <Map 
-            buildings={props.buildings}
-            selectedBuildingId={props.selectedBuildingId}
-            onBuildingClick={props.selectBuilding}
-            getUpgradeCost={props.getUpgradeCost}
-            onUpgrade={props.upgradeBuilding}
+            buildings={buildings}
+            selectedBuildingId={selectedBuildingId}
+            onBuildingClick={handleBuildingClick}
+            getUpgradeCost={getUpgradeCost}
+            onUpgrade={handleUpgrade}
+            unitsInProduction={unitsInProduction}
           />
         </div>
         
-        <MessageBox message={props.message} />
+        <MessageBox message={message} />
 
         {isSettingsPanelOpen && (
           <SettingsPanel onClose={() => setIsSettingsPanelOpen(false)} />
         )}
 
         <DebugOverlay 
-          buildings={props.buildings}
+          buildings={buildings}
           onCoordinateUpdate={handleCoordinateUpdate}
         />
+
+        {/* Buildings */}
+        <div className="buildings absolute inset-0 pointer-events-none">
+          {buildings.map(building => (
+            <Building
+              key={building.id}
+              building={building}
+              selected={selectedBuildingId === building.id}
+              onClick={(id) => handleBuildingClick(id)}
+              upgradeCost={building.owner === 'player' ? getUpgradeCost(building.level) : undefined}
+              canUpgrade={building.owner === 'player' && player.gold >= getUpgradeCost(building.level)}
+              onUpgrade={building.owner === 'player' ? handleUpgrade : undefined}
+              unitsInProduction={unitsInProduction[building.id] || 0}
+            />
+          ))}
+        </div>
+        
+        {/* Unit animations layer */}
+        <UnitAnimations />
+        
+        {/* Game controls */}
+        <GameControls 
+          onExit={onExit}
+        />
+        
+        {/* Control bar */}
+        <ControlBar />
       </div>
     </ErrorBoundary>
   );

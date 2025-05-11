@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Building as BuildingType } from '../types/gameTypes';
-import Building from './Building';
+import BuildingFactory from './map-elements/BuildingFactory';
 import UnitAnimation from './UnitAnimation';
 
 interface MapProps {
@@ -9,6 +9,7 @@ interface MapProps {
   onBuildingClick: (id: string) => void;
   getUpgradeCost: (building: BuildingType) => number;
   onUpgrade: (building: BuildingType) => void;
+  unitsInProduction?: Record<string, number>;
 }
 
 const Map: React.FC<MapProps> = ({ 
@@ -16,7 +17,8 @@ const Map: React.FC<MapProps> = ({
   selectedBuildingId, 
   onBuildingClick,
   getUpgradeCost,
-  onUpgrade
+  onUpgrade,
+  unitsInProduction = {}
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -46,7 +48,7 @@ const Map: React.FC<MapProps> = ({
         const canUpgrade = building.owner === 'player' && building.units >= upgradeCost;
         
         return (
-          <Building
+          <BuildingFactory
             key={building.id}
             building={building}
             selected={building.id === selectedBuildingId}
@@ -54,6 +56,7 @@ const Map: React.FC<MapProps> = ({
             upgradeCost={upgradeCost}
             canUpgrade={canUpgrade}
             onUpgrade={() => onUpgrade(building)}
+            unitsInProduction={unitsInProduction[building.id] || 0}
           />
         );
       })}
