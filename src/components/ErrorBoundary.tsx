@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { copyErrorToClipboard } from '../utils/errorUtils';
 
 interface Props {
   children: ReactNode;
@@ -10,6 +11,8 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  copySuccess: boolean;
+  copyAttempted: boolean;
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -18,11 +21,13 @@ class ErrorBoundary extends Component<Props, State> {
     this.state = { 
       hasError: false, 
       error: null,
-      errorInfo: null
+      errorInfo: null,
+      copySuccess: false,
+      copyAttempted: false
     };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     // Update state so the next render shows the fallback UI
     return { 
       hasError: true, 
@@ -32,9 +37,11 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log the error to console
+    // Log the error to console with clear formatting
     console.error('=== ERROR BOUNDARY CAUGHT ERROR ===');
-    console.error(error);
+    console.error('Error:', error);
+    console.error('Error Message:', error.message);
+    console.error('Error Stack:', error.stack);
     console.error('Component Stack:', errorInfo.componentStack);
     
     // Call optional onError callback
@@ -45,9 +52,6 @@ class ErrorBoundary extends Component<Props, State> {
         console.error('Error in onError callback:', callbackError);
       }
     }
-    
-    // Log to an error reporting service here if available
-    // Example: logErrorToService(error, errorInfo);
     
     // Update state with error details
     this.setState({ 
@@ -61,11 +65,40 @@ class ErrorBoundary extends Component<Props, State> {
     this.setState({ 
       hasError: false, 
       error: null, 
-      errorInfo: null 
+      errorInfo: null,
+      copySuccess: false,
+      copyAttempted: false
     });
     
     // Then reload the page
     window.location.reload();
+  }
+
+  handleCopyError = async (): Promise<void> => {
+    const { error, errorInfo } = this.state;
+    if (!error) return;
+
+    try {
+      const success = await copyErrorToClipboard(error, errorInfo);
+      this.setState({ 
+        copySuccess: success,
+        copyAttempted: true
+      });
+      
+      // Reset copy status after 3 seconds
+      setTimeout(() => {
+        this.setState({
+          copySuccess: false,
+          copyAttempted: true
+        });
+      }, 3000);
+    } catch (err) {
+      console.error('Failed to copy error details:', err);
+      this.setState({ 
+        copySuccess: false,
+        copyAttempted: true
+      });
+    }
   }
 
   render(): ReactNode {
@@ -74,6 +107,17 @@ class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) {
         return this.props.fallback;
       }
+      
+      // Get button text based on copy state
+      const copyBtnText = !this.state.copyAttempted 
+        ? 'Fehlerdetails kopieren' 
+        : this.state.copySuccess 
+          ? 'Kopiert!' 
+          : 'Fehler beim Kopieren';
+          
+      const copyBtnClass = this.state.copySuccess
+        ? 'px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-300 transition-colors'
+        : 'px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 focus:outline-none focus:ring focus:ring-gray-300 transition-colors';
       
       // Default fallback UI
       return (
@@ -103,7 +147,7 @@ class ErrorBoundary extends Component<Props, State> {
             </pre>
           </details>
           
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 mb-3">
             <button 
               onClick={this.handleReload} 
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-300 transition-colors"
@@ -120,6 +164,15 @@ class ErrorBoundary extends Component<Props, State> {
               Zurück
             </button>
           </div>
+          
+          {/* New button to copy error details */}
+          <button 
+            onClick={this.handleCopyError} 
+            className={copyBtnClass}
+            aria-label="Fehlerdetails kopieren"
+          >
+            {copyBtnText}
+          </button>
         </div>
       );
     }

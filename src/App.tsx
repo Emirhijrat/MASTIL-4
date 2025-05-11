@@ -2,9 +2,13 @@ import { useEffect, useState } from 'react';
 import GameBoard from './components/GameBoard';
 import LoadingScreen from './components/LoadingScreen';
 import PlayerNameInputPopup from './components/PlayerNameInputPopup';
+import PauseOverlay from './components/PauseOverlay';
+import GameOverScreen from './components/GameOverScreen';
+import GameControls from './components/GameControls';
 import { useGameState } from './hooks/useGameState';
 import { useTheme } from './hooks/useTheme';
 import ErrorBoundary from './components/ErrorBoundary';
+import { formatErrorForReporting } from './utils/errorUtils';
 import './App.css';
 import { gameConfig } from './utils/gameConfig';
 
@@ -12,10 +16,21 @@ import { gameConfig } from './utils/gameConfig';
 const handleGlobalError = (error: Error, errorInfo: React.ErrorInfo) => {
   console.error('=== GLOBAL ERROR HANDLER ===');
   console.error('Error:', error);
+  console.error('Error Message:', error.message);
+  console.error('Error Stack:', error.stack);
   console.error('Component Stack:', errorInfo.componentStack);
   
+  // Format the error with our utility
+  const formattedError = formatErrorForReporting(error, errorInfo, {
+    errorSource: 'React ErrorBoundary',
+    context: 'App component'
+  });
+  
+  // Log the formatted error for debugging
+  console.debug('Formatted error report:', formattedError);
+  
   // Here you could send the error to a logging service
-  // logErrorToService(error, errorInfo);
+  // logErrorToService(formattedError);
 };
 
 function App() {
@@ -44,7 +59,9 @@ function App() {
     playerElement,
     aiElement,
     playerBuildingCount,
-    enemyBuildingCount
+    enemyBuildingCount,
+    isPaused,
+    togglePause
   } = useGameState(gameConfig);
 
   console.log('App.tsx rendering - showPlayerInputPopup:', showPlayerInputPopup);
@@ -75,7 +92,8 @@ function App() {
     console.log('buildings length:', buildings.length);
     console.log('selectedBuildingId:', selectedBuildingId);
     console.log('gameOver:', gameOver);
-  }, [showPlayerInputPopup, playerName, playerElement, buildings, selectedBuildingId, gameOver]);
+    console.log('isPaused:', isPaused);
+  }, [showPlayerInputPopup, playerName, playerElement, buildings, selectedBuildingId, gameOver, isPaused]);
 
   if (error) {
     return (
@@ -134,6 +152,11 @@ function App() {
             </div>
           }
         >
+          <GameControls 
+            isPaused={isPaused} 
+            onTogglePause={togglePause} 
+          />
+          
           <GameBoard
             buildings={buildings}
             selectedBuildingId={selectedBuildingId}
@@ -148,9 +171,21 @@ function App() {
             message={message || ''}
             showMessage={showMessage}
           />
+          
+          <PauseOverlay 
+            isPaused={isPaused} 
+            onResume={togglePause} 
+          />
+          
+          <GameOverScreen 
+            isVisible={gameOver}
+            message={gameOverMessage}
+            isVictory={playerBuildingCount > 0 && enemyBuildingCount === 0}
+            onRestart={restartGame}
+          />
         </ErrorBoundary>
         
-        {message && (
+        {message && !gameOver && !isPaused && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-700 text-white px-4 py-2 rounded shadow-lg z-[2500]">
             {message}
           </div>

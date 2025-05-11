@@ -12,7 +12,6 @@ import { useGameState } from '../hooks/useGameState';
 import StatusBar from './StatusBar';
 import Map from './Map';
 import MessageBox from './MessageBox';
-import EndScreen from './EndScreen';
 import SettingsPanel from './SettingsPanel';
 import DebugOverlay from './DebugOverlay';
 import ErrorBoundary from './ErrorBoundary';
@@ -70,29 +69,15 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
     // when we have a proper state management solution for coordinates.
   };
 
-  if (props.gameOver) {
-    console.log('Rendering game over screen');
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center text-center p-4">
-        <h2 className="text-3xl font-bold mb-4">{props.gameOverMessage}</h2>
-        <button 
-          onClick={props.restartGame} 
-          className="px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 text-xl"
-        >
-          Play Again
-        </button>
-      </div>
-    );
-  }
-
   console.log('Rendering main game board');
   const buildingBaseSize = 6;
 
   return (
     <ErrorBoundary>
-      <div className="w-full h-full max-w-[min(90vh,800px)] aspect-[4/3] sm:aspect-[16/9] 
+      <div className={`w-full h-full max-w-[min(90vh,800px)] aspect-[4/3] sm:aspect-[16/9] 
                       rounded-xl shadow-2xl overflow-hidden flex flex-col 
-                      border border-[var(--mastil-border)] touch-manipulation game-board">
+                      border border-[var(--mastil-border)] touch-manipulation game-board
+                      ${props.gameOver ? 'opacity-70 pointer-events-none' : ''}`}>
         <StatusBar 
           playerBuildingCount={props.playerBuildingCount} 
           enemyBuildingCount={props.enemyBuildingCount}

@@ -2,22 +2,24 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Building, OwnerType, GameConfig, ElementType, ELEMENTS } from '../types/gameTypes';
 import { useUnitAnimationDispatch } from './useUnitAnimations';
 import { useAudio } from './useAudio';
-import { initialBuildingData } from '../utils/initialData'; // Imported here
-import { makeAIDecision, handleAIEvent, getRandomMessage } from '../ai/enemyAI';
+import { handleAIEvent, getRandomMessage, makeAIDecision } from '../ai/enemyAI';
+import { useBuildingManagement } from './useBuildingManagement';
+import { useNeutralBehavior } from './useNeutralBehavior';
 
 export function useGameState(config: GameConfig) {
-  const [buildings, setBuildings] = useState<Building[]>([]);
+  // Player state
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverMessage, setGameOverMessage] = useState('');
-  const [lastNeutralUpgrade, setLastNeutralUpgrade] = useState(Date.now());
-
   const [showPlayerInputPopup, setShowPlayerInputPopup] = useState(true);
   const [playerName, setPlayerName] = useState('Majestät');
   const [playerElement, setPlayerElement] = useState<ElementType | null>(null);
   const [aiElement, setAiElement] = useState<ElementType | null>(null);
+  // Add pause state
+  const [isPaused, setIsPaused] = useState(false);
 
+  // Track popup state changes
   const prevShowPlayerInputPopupRef = useRef<boolean>(showPlayerInputPopup);
   useEffect(() => {
     if (prevShowPlayerInputPopupRef.current !== showPlayerInputPopup) {
@@ -26,6 +28,18 @@ export function useGameState(config: GameConfig) {
     prevShowPlayerInputPopupRef.current = showPlayerInputPopup;
   }, [showPlayerInputPopup, playerElement]);
 
+  // Use the building management hook
+  const {
+    buildings,
+    setBuildings,
+    calculateUpgradeCost,
+    upgradeBuilding: upgradeBuildingBase,
+    handleUnitsArrival: handleUnitsArrivalBase,
+    initializeBuildings,
+    setupBuildingUnitGeneration
+  } = useBuildingManagement(config);
+
+  // Log buildings state updates
   useEffect(() => {
     try {
       console.log('=== BUILDINGS STATE UPDATE ===');
@@ -52,72 +66,40 @@ export function useGameState(config: GameConfig) {
   const { startUnitAnimation } = useUnitAnimationDispatch();
   const { playAttackSound, playBackgroundMusic, stopBackgroundMusic } = useAudio();
 
+  // Message display logic
   const showMessage = useCallback((text: string) => {
     setMessage(text);
     setTimeout(() => setMessage(null), 3000);
   }, []);
 
-  const calculateUpgradeCost = useCallback((building: Building) => {
-    return Math.floor(config.baseUpgradeCost * Math.pow(config.upgradeCostFactor, building.level - 1));
-  }, [config.baseUpgradeCost, config.upgradeCostFactor]);
-
+  // Wrap the base upgrade function
   const upgradeBuilding = useCallback((buildingToUpgrade: Building) => {
-    if (showPlayerInputPopup) return;
-    const cost = calculateUpgradeCost(buildingToUpgrade);
-    setBuildings(prevBuildings => {
-      const currentBuilding = prevBuildings.find(b => b.id === buildingToUpgrade.id);
-      if (!currentBuilding) return prevBuildings;
-      if (currentBuilding.units >= cost && currentBuilding.level < 5) {
-        showMessage(`Building ${currentBuilding.id} upgraded to level ${currentBuilding.level + 1}!`);
-        return prevBuildings.map(b => b.id === currentBuilding.id ? { ...b, units: b.units - cost, level: b.level + 1, maxUnits: config.maxUnitsPerBuilding + (b.level * 20) } : b);
-      }
-      if(currentBuilding.owner === 'player') showMessage("Not enough units or max level reached for upgrade.");
-      return prevBuildings;
-    });
-  }, [calculateUpgradeCost, config.maxUnitsPerBuilding, showMessage, showPlayerInputPopup]);
+    // Don't allow upgrades when paused
+    if (isPaused) return;
+    upgradeBuildingBase(buildingToUpgrade, showPlayerInputPopup, showMessage);
+  }, [upgradeBuildingBase, showPlayerInputPopup, showMessage, isPaused]);
 
+  // Wrap the base handleUnitsArrival function
   const handleUnitsArrival = useCallback((targetId: string, numUnits: number, attackerOwner: OwnerType) => {
-    setBuildings(prevBuildings => {
-      const targetBuildingIndex = prevBuildings.findIndex(b => b.id === targetId);
-      if (targetBuildingIndex === -1) return prevBuildings;
-      const targetBuilding = prevBuildings[targetBuildingIndex];
-      let newTargetBuildingState = { ...targetBuilding };
-      if (attackerOwner === 'neutral' && targetBuilding.owner === 'neutral') {
-        newTargetBuildingState.units = Math.min(targetBuilding.units + numUnits, targetBuilding.maxUnits);
-      } else if (targetBuilding.owner === attackerOwner) {
-        newTargetBuildingState.units = Math.min(targetBuilding.units + numUnits, targetBuilding.maxUnits);
-      } else {
-        const unitsAfterBattle = targetBuilding.units - numUnits;
-        if (unitsAfterBattle < 0) {
-          newTargetBuildingState.owner = attackerOwner;
-          newTargetBuildingState.units = Math.abs(unitsAfterBattle);
-          if (attackerOwner === 'enemy') handleAIEvent('conquest', showMessage);
-          else if (targetBuilding.owner === 'enemy') handleAIEvent('loss', showMessage);
-        } else if (unitsAfterBattle === 0) {
-          newTargetBuildingState.owner = 'neutral';
-          newTargetBuildingState.units = 0;
-        } else {
-          newTargetBuildingState.units = unitsAfterBattle;
-        }
-      }
-      const updatedBuildings = [...prevBuildings];
-      updatedBuildings[targetBuildingIndex] = newTargetBuildingState;
-      return updatedBuildings;
-    });
-  }, [showMessage, handleAIEvent]);
+    handleUnitsArrivalBase(targetId, numUnits, attackerOwner, showMessage, handleAIEvent);
+  }, [handleUnitsArrivalBase, showMessage]);
 
+  // Send units from one building to another
   const sendUnits = useCallback((source: Building, target: Building) => {
-    if (showPlayerInputPopup) return;
+    // Don't allow sending units when paused
+    if (showPlayerInputPopup || isPaused) return;
     if (source.units <= 1) {
       if(source.owner === 'player') showMessage("Not enough units to send.");
       return;
     }
     const unitsToSend = Math.floor(source.units * 0.5);
     setBuildings(prevBuildings => prevBuildings.map(b => b.id === source.id ? { ...b, units: b.units - unitsToSend } : b));
-    if (typeof playAttackSound === 'function') playAttackSound(); else console.error("playAttackSound is not a function");
-    if (typeof startUnitAnimation === 'function') startUnitAnimation(source, target, unitsToSend, source.owner, handleUnitsArrival); else console.error("startUnitAnimation is not a function");
-  }, [playAttackSound, showMessage, startUnitAnimation, handleUnitsArrival, showPlayerInputPopup]);
+    
+    playAttackSound();
+    startUnitAnimation(source, target, unitsToSend, source.owner, handleUnitsArrival);
+  }, [playAttackSound, showMessage, startUnitAnimation, handleUnitsArrival, showPlayerInputPopup, setBuildings, isPaused]);
   
+  // Player setup logic
   const handlePlayerSetup = useCallback((name: string, element: ElementType) => {
     try {
       console.log('=== PLAYER SETUP START ===');
@@ -127,114 +109,66 @@ export function useGameState(config: GameConfig) {
         throw new Error('Invalid player setup: name or element is missing');
       }
 
-      console.log('Setting player name and element...');
       setPlayerName(name);
       setPlayerElement(element);
       
-      console.log('Determining AI element...');
+      // Determine AI element (different from player)
       let assignedAiElement: ElementType;
       do { 
         assignedAiElement = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)]; 
       } while (assignedAiElement === element);
       setAiElement(assignedAiElement);
 
-      console.log('=== BUILDING INITIALIZATION ===');
-      console.log('Type of initialBuildingData:', typeof initialBuildingData);
-      if (!initialBuildingData) {
-        console.error('initialBuildingData is undefined or null');
-        throw new Error('initialBuildingData is undefined or null');
+      // Initialize buildings with player and AI elements
+      const success = initializeBuildings(element, assignedAiElement);
+      if (!success) {
+        throw new Error('Failed to initialize buildings');
       }
       
-      if (!Array.isArray(initialBuildingData)) {
-        console.error('initialBuildingData is not an array:', initialBuildingData);
-        throw new Error('initialBuildingData is not an array');
-      }
-      
-      console.log('Raw initialBuildingData length:', initialBuildingData.length);
-      console.log('Raw initialBuildingData:', initialBuildingData);
-
-      console.log('Creating buildings...');
-      const newBuildings = initialBuildingData.map((item, index) => {
-        console.log(`Processing building ${index}:`, item);
-        if (!item || !Array.isArray(item) || item.length < 5) {
-          console.error(`Invalid building data at index ${index}:`, item);
-          throw new Error(`Invalid building data at index ${index}`);
-        }
-        
-        const owner = item[1];
-        let buildingElement = undefined;
-        
-        // Assign elements to player and enemy buildings
-        if (owner === 'player') {
-          buildingElement = element;
-        } else if (owner === 'enemy') {
-          buildingElement = assignedAiElement;
-        }
-        
-        const building = {
-          id: item[0],
-          owner: owner,
-          units: item[2],
-          maxUnits: 100,
-          level: item[3],
-          position: item[4],
-          isInvulnerable: item[5] || false,
-          element: buildingElement
-        };
-        
-        console.log(`Created building:`, building);
-        return building;
-      });
-
-      console.log('Populating buildings in handlePlayerSetup:', JSON.stringify(newBuildings));
-      console.log('Setting buildings state...');
-      setBuildings(newBuildings);
-      
-      console.log('Setting game start time...');
+      // Store game start time
       localStorage.setItem('gameStartTime', Date.now().toString());
       
-      console.log('Attempting to hide pop-up in handlePlayerSetup.');
+      // Hide the player input popup
       setShowPlayerInputPopup(false);
       
-      console.log('Attempting to show greeting message.');
+      // Show greeting message
       showMessage(`Majestät ${name}, mögen Eure ${element}-Kräfte den Feind bezwingen!`);
       
       console.log('=== PLAYER SETUP COMPLETE ===');
-      console.log('Final state:', {
-        playerName: name,
-        playerElement: element,
-        aiElement: assignedAiElement,
-        buildingsCount: newBuildings.length
-      });
     } catch (error) {
       console.error('Error in handlePlayerSetup:', error);
       throw error;
     }
-  }, []);
+  }, [initializeBuildings, showMessage]);
 
+  // Building selection logic
   const selectBuilding = useCallback((buildingId: string) => {
-    if (showPlayerInputPopup) return;
+    // Don't allow selections when paused
+    if (showPlayerInputPopup || isPaused) return;
+    
     const building = buildings.find(b => b.id === buildingId);
+    
     if (!selectedBuildingId) {
       if (building?.owner === 'player') {
         setSelectedBuildingId(buildingId);
-        if(building.owner === 'player') showMessage(`Building ${buildingId} selected. Click target.`);
+        showMessage(`Building ${buildingId} selected. Click target.`);
       }
     } else {
       const sourceBuilding = buildings.find(b => b.id === selectedBuildingId);
       if (sourceBuilding && building && sourceBuilding.id !== building.id) {
-        if (typeof sendUnits === 'function') sendUnits(sourceBuilding, building); else console.error("selectBuilding: sendUnits is not a function");
+        sendUnits(sourceBuilding, building);
       }
       setSelectedBuildingId(null);
     }
-  }, [buildings, selectedBuildingId, showMessage, sendUnits, showPlayerInputPopup]);
+  }, [buildings, selectedBuildingId, showMessage, sendUnits, showPlayerInputPopup, isPaused]);
 
   const deselectBuilding = useCallback(() => {
     setSelectedBuildingId(null);
   }, []);
   
+  // Win/lose condition check
   const checkWinCondition = useCallback(() => {
-    if (gameOver || showPlayerInputPopup || buildings.length === 0) return;
+    if (gameOver || showPlayerInputPopup || buildings.length === 0 || isPaused) return;
     
     const enemyBase = buildings.find(b => b.id === 'b2' && b.owner === 'enemy');
     const gameStartTime = localStorage.getItem('gameStartTime');
@@ -255,249 +189,94 @@ export function useGameState(config: GameConfig) {
     if (enemyBuildingCount === 0 && playerBuildingCount > 0) {
       setGameOver(true);
       setGameOverMessage(`Victory, Majestät ${playerName}! All enemy strongholds crumble before your ${playerElement} might!`);
-      if (typeof stopBackgroundMusic === 'function') stopBackgroundMusic();
+      stopBackgroundMusic();
     } else if (playerBuildingCount === 0 && enemyBuildingCount > 0) {
       setGameOver(true);
       setGameOverMessage(`Defeat, Majestät ${playerName}! Your forces have been vanquished by the enemy's ${aiElement} power.`);
-      if (typeof stopBackgroundMusic === 'function') stopBackgroundMusic();
+      stopBackgroundMusic();
     }
-  }, [buildings, gameOver, showPlayerInputPopup, playerName, playerElement, aiElement, stopBackgroundMusic]);
+  }, [buildings, gameOver, showPlayerInputPopup, playerName, playerElement, aiElement, stopBackgroundMusic, isPaused]);
 
+  // Game restart logic
   const restartGame = useCallback(() => {
     console.log("[useGameState restartGame] Restarting game...");
-    if (typeof stopBackgroundMusic === 'function') stopBackgroundMusic();
+    stopBackgroundMusic();
     setBuildings([]); 
     setPlayerElement(null); 
     setAiElement(null);
     setGameOver(false); 
     setGameOverMessage(''); 
     setSelectedBuildingId(null); 
-    setMessage(null); 
+    setMessage(null);
+    setIsPaused(false);
     console.log("[useGameState restartGame] Setting showPlayerInputPopup to true.");
     setShowPlayerInputPopup(true);
-  }, [stopBackgroundMusic]);
+  }, [stopBackgroundMusic, setBuildings]);
 
-  // Slower unit generation for neutrals
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!gameOver && !showPlayerInputPopup) {
-        setBuildings(prevBuildings => {
-          const gameStartTime = localStorage.getItem('gameStartTime');
-          const now = Date.now();
-          const nineHoursInMs = 9 * 60 * 60 * 1000;
-          const isInvulnerable = gameStartTime && (now - parseInt(gameStartTime)) < nineHoursInMs;
-          let changed = false;
-          const newBuildings = prevBuildings.map(building => {
-            if (
-              building.owner === 'neutral' &&
-              building.units < building.maxUnits &&
-              !isInvulnerable
-            ) {
-              changed = true;
-              return {
-                ...building,
-                units: building.units + 1
-              };
-            }
-            return building;
-          });
-          return changed ? newBuildings : prevBuildings;
-        });
-      }
-    }, 15000); // 15 seconds
-    return () => clearInterval(interval);
-  }, [gameOver, showPlayerInputPopup]);
-
-  // Player/enemy unit generation (unchanged)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!gameOver && !showPlayerInputPopup) {
-        setBuildings(prevBuildings => {
-          let changed = false;
-          const newBuildings = prevBuildings.map(building => {
-            if (
-              (building.owner === 'player' || building.owner === 'enemy') &&
-              building.units < building.maxUnits
-            ) {
-              changed = true;
-              return {
-                ...building,
-                units: Math.min(building.units + building.level, building.maxUnits)
-              };
-            }
-            return building;
-          });
-          return changed ? newBuildings : prevBuildings;
-        });
-      }
-    }, config.unitGenerationInterval);
-    return () => clearInterval(interval);
-  }, [config.unitGenerationInterval, gameOver, showPlayerInputPopup]);
-
-  // Neutral self-upgrading effect (adjusted to every 12s)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!gameOver && !showPlayerInputPopup) {
-        const now = Date.now();
-        if (now - lastNeutralUpgrade >= 12000) { // 12 seconds
-          setBuildings(prevBuildings => {
-            const neutralBuildings = prevBuildings.filter(b => b.owner === 'neutral');
-            let upgraded = false;
-            const buildingToUpgrade = neutralBuildings.find(building => 
-              building.units > 20 + (building.level * 5) &&
-              building.level < config.maxBuildingLevel &&
-              Math.random() < 0.3
-            );
-            if (buildingToUpgrade) {
-              console.log(`[Neutral] Building ${buildingToUpgrade.id} upgrading from level ${buildingToUpgrade.level}`);
-              upgraded = true;
-              setLastNeutralUpgrade(now);
-              return prevBuildings.map(building => 
-                building.id === buildingToUpgrade.id
-                  ? {
-                      ...building,
-                      level: building.level + 1,
-                      maxUnits: config.maxUnitsPerBuilding + (building.level * 20),
-                      units: building.units - (20 + (building.level * 5))
-                    }
-                  : building
-              );
-            }
-            return prevBuildings;
-          });
-        }
-      }
-    }, 12000); // 12 seconds
-    return () => clearInterval(interval);
-  }, [config.maxUnitsPerBuilding, config.maxBuildingLevel, gameOver, lastNeutralUpgrade, showPlayerInputPopup]);
-
-  // Add new state for neutral message cooldowns
-  const [lastNeutralIdleChatter, setLastNeutralIdleChatter] = useState(Date.now());
-  const [lastNeutralSupportMessage, setLastNeutralSupportMessage] = useState(Date.now());
-
-  // Neutral idle chatter effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!gameOver && !showPlayerInputPopup) {
-        const now = Date.now();
-        if (now - lastNeutralIdleChatter >= 30000) { // 30 second cooldown
-          const neutralBuildings = buildings.filter(b => b.owner === 'neutral');
-          if (neutralBuildings.length > 0 && Math.random() < 0.2) { // 20% chance
-            const randomBuilding = neutralBuildings[Math.floor(Math.random() * neutralBuildings.length)];
-            showMessage(getRandomMessage('neutral_idle_chatter'));
-            setLastNeutralIdleChatter(now);
-          }
-        }
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [buildings, gameOver, showPlayerInputPopup, lastNeutralIdleChatter, showMessage]);
-
-  // Update the neutral support effect to include messages
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!gameOver && !showPlayerInputPopup) {
-        const now = Date.now();
-        if (now - lastNeutralSupportMessage >= 10000) { // 10 second cooldown
-          setBuildings(prevBuildings => {
-            const neutralBuildings = prevBuildings.filter(b => b.owner === 'neutral');
-            if (neutralBuildings.length < 2) return prevBuildings;
-
-            const needyBuildings = neutralBuildings.filter(b => 
-              b.units < b.maxUnits * 0.8
-            ).sort((a, b) => (a.units / a.maxUnits) - (b.units / b.maxUnits));
-
-            if (needyBuildings.length === 0) return prevBuildings;
-
-            const supportBuildings = neutralBuildings.filter(b => 
-              b.units > 5 &&
-              b.units > b.maxUnits * 0.8
-            );
-
-            if (supportBuildings.length === 0) return prevBuildings;
-
-            const targetBuilding = needyBuildings[0];
-            const sourceBuilding = supportBuildings[Math.floor(Math.random() * supportBuildings.length)];
-
-            const surplusUnits = sourceBuilding.units - 5;
-            const unitsToSend = Math.floor(surplusUnits * 0.75);
-
-            if (unitsToSend > 0) {
-              console.log(`[Neutral] Sending ${unitsToSend} units from ${sourceBuilding.id} to ${targetBuilding.id}`);
-              
-              // Show support message
-              showMessage(getRandomMessage('neutral_support_action'));
-              setLastNeutralSupportMessage(now);
-              
-              startUnitAnimation(sourceBuilding, targetBuilding, unitsToSend, 'neutral', (units) => {
-                handleUnitsArrival(targetBuilding.id, units, 'neutral');
-              });
-
-              return prevBuildings.map(building =>
-                building.id === sourceBuilding.id
-                  ? { ...building, units: building.units - unitsToSend }
-                  : building
-              );
-            }
-
-            return prevBuildings;
-          });
-        }
-      }
-    }, 8000);
-
-    return () => clearInterval(interval);
-  }, [gameOver, showPlayerInputPopup, startUnitAnimation, lastNeutralSupportMessage, showMessage]);
-
-  useEffect(() => {
-    if (!showPlayerInputPopup && buildings.length > 0 && !gameOver) { 
-        checkWinCondition();
-    }
-  }, [buildings, checkWinCondition, showPlayerInputPopup, gameOver]);
-
-  const initializeGame = useCallback(() => {
-    console.log('=== INITIAL BUILDING DATA SOURCE ===');
-    console.log('Source array length:', initialBuildingData.length);
-    console.log('Raw initialBuildingData:', JSON.stringify(initialBuildingData, null, 2));
-    
-    const newBuildings = initialBuildingData.map(building => {
-      console.log(`Creating building: ${building.id} at position:`, building.position);
-      return {
-        ...building,
-        units: building.initialUnits || 0,
-        level: 1,
-        lastUpdated: Date.now(),
-        owner: building.owner || 'neutral'
-      };
-    });
-
-    console.log('=== FINAL BUILDINGS ARRAY ===');
-    console.log('Total buildings created:', newBuildings.length);
-    console.log('Building IDs:', newBuildings.map(b => b.id));
-    
-    setBuildings(newBuildings);
-    setSelectedBuildingId(null);
-    setGameOver(false);
-    setGameOverMessage('');
-    setMessage('');
-  }, []);
-
-  useEffect(() => {
-    console.log('=== LOCAL STORAGE CHECK ===');
-    const savedBuildings = localStorage.getItem('buildings');
-    if (savedBuildings) {
-      console.log('Found saved buildings in localStorage:', JSON.parse(savedBuildings));
+  // Toggle pause state
+  const togglePause = useCallback(() => {
+    // Don't allow pausing during game setup or game over
+    if (showPlayerInputPopup || gameOver) return;
+    setIsPaused(prev => !prev);
+    if (!isPaused) {
+      showMessage("Game Paused");
     } else {
-      console.log('No saved buildings found in localStorage');
+      showMessage("Game Resumed");
     }
-    
-    initializeGame();
-  }, [initializeGame]);
+  }, [showPlayerInputPopup, gameOver, isPaused, showMessage]);
+
+  // Set up neutral behavior - pass isPaused flag
+  useNeutralBehavior({
+    buildings,
+    setBuildings,
+    gameOver,
+    showPlayerInputPopup,
+    showMessage,
+    config,
+    startUnitAnimation,
+    handleUnitsArrival,
+    isPaused
+  });
+
+  // Setup building unit generation for player and enemy
+  useEffect(() => {
+    const cleanup = setupBuildingUnitGeneration(
+      gameOver,
+      showPlayerInputPopup,
+      config.unitGenerationInterval,
+      isPaused
+    );
+    return cleanup;
+  }, [setupBuildingUnitGeneration, gameOver, showPlayerInputPopup, config.unitGenerationInterval, isPaused]);
+
+  // Check win conditions
+  useEffect(() => {
+    if (!showPlayerInputPopup && buildings.length > 0 && !gameOver && !isPaused) { 
+      checkWinCondition();
+    }
+  }, [buildings, checkWinCondition, showPlayerInputPopup, gameOver, isPaused]);
 
   return {
-    buildings, selectedBuildingId, message, gameOver, gameOverMessage, playerBuildingCount: buildings.filter(b => b.owner === 'player').length, 
-    enemyBuildingCount: buildings.filter(b => b.owner === 'enemy').length, showPlayerInputPopup, playerName, playerElement, aiElement,
-    selectBuilding, deselectBuilding, sendUnits, upgradeBuilding, showMessage, restartGame, getUpgradeCost: calculateUpgradeCost, handlePlayerSetup,
+    buildings, 
+    selectedBuildingId, 
+    message, 
+    gameOver, 
+    gameOverMessage, 
+    playerBuildingCount: buildings.filter(b => b.owner === 'player').length, 
+    enemyBuildingCount: buildings.filter(b => b.owner === 'enemy').length, 
+    showPlayerInputPopup, 
+    playerName, 
+    playerElement, 
+    aiElement,
+    isPaused,
+    togglePause,
+    selectBuilding, 
+    deselectBuilding, 
+    sendUnits, 
+    upgradeBuilding, 
+    showMessage, 
+    restartGame, 
+    getUpgradeCost: calculateUpgradeCost, 
+    handlePlayerSetup,
   };
 }
