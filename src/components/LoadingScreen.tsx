@@ -5,7 +5,7 @@ interface LoadingScreenProps {
 }
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = "wird gestartet..." }) => {
-  const version = "Version 1.0.2"; // Updated version number
+  const version = "Version 1.0.4"; // Updated version number
 
   // Ensure proper handling of device orientation changes
   useEffect(() => {
