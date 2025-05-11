@@ -198,3 +198,20 @@ export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 export const useUnitAnimations = () => useContext(UnitAnimationContext);
+
+// Add the missing useUnitAnimationDispatch hook
+export const useUnitAnimationDispatch = () => {
+  const { startUnitAttack } = useContext(UnitAnimationContext);
+  
+  return {
+    startUnitAnimation: (
+      source: Building,
+      target: Building,
+      units: number,
+      owner: OwnerType,
+      onComplete: OnCompleteCallback
+    ) => {
+      startUnitAttack(source, target, units, owner, onComplete);
+    }
+  };
+};
