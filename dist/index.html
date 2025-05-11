@@ -2,13 +2,89 @@
 <html lang="en" class="theme-light">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/castle-icon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="./castle-icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>MASTIL</title>
-    <script type="module" crossorigin src="/assets/index-LRTwwvIf.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-B8SKbr4W.css">
+    
+    <!-- Background Styling -->
+    <link rel="stylesheet" href="./assets/game-background.css">
+    <link rel="stylesheet" href="./assets/loading-screen.css">
+    
+    <!-- Error Tracking -->
+    <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        console.error('CAPTURED ERROR:');
+        console.error('Message:', message);
+        console.error('Source:', source);
+        console.error('Line:', lineno);
+        console.error('Column:', colno);
+        console.error('Error object:', error);
+        
+        // Display error on page
+        document.addEventListener('DOMContentLoaded', function() {
+          const errorDiv = document.createElement('div');
+          errorDiv.style.position = 'fixed';
+          errorDiv.style.top = '0';
+          errorDiv.style.left = '0';
+          errorDiv.style.right = '0';
+          errorDiv.style.padding = '20px';
+          errorDiv.style.backgroundColor = '#f8d7da';
+          errorDiv.style.color = '#721c24';
+          errorDiv.style.zIndex = '9999';
+          errorDiv.innerHTML = `<strong>Error:</strong> ${message}<br>
+                               <strong>Source:</strong> ${source}<br>
+                               <strong>Line/Column:</strong> ${lineno}:${colno}`;
+          document.body.appendChild(errorDiv);
+        });
+        
+        return false;
+      };
+      
+      // Simple loading stages logging
+      console.log('DEBUG: HTML parsed');
+    </script>
+    
+    <script type="module" crossorigin src="./assets/index-LRTwwvIf.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B8SKbr4W.css">
   </head>
   <body>
     <div id="root"></div>
+    
+    <!-- Fallback content if React doesn't render -->
+    <script>
+      // Wait a bit to check if React has rendered anything
+      setTimeout(function() {
+        const root = document.getElementById('root');
+        if (root && !root.hasChildNodes()) {
+          console.log('DEBUG: React failed to render after 2 seconds');
+          root.innerHTML = `
+            <div style="max-width: 500px; margin: 50px auto; padding: 20px; text-align: center; font-family: sans-serif;">
+              <h1 style="color: #721c24;">Application Failed to Start</h1>
+              <p>The React application failed to render. Please check the browser console for errors.</p>
+              <p><strong>Common issues:</strong></p>
+              <ul style="text-align: left;">
+                <li>JavaScript errors in the application code</li>
+                <li>Failed to load dependencies</li>
+                <li>React mounting issues</li>
+              </ul>
+              <div style="margin-top: 30px;">
+                <a href="test.html" style="background: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Run Asset Test</a>
+              </div>
+            </div>
+          `;
+        }
+      }, 2000);
+      
+      console.log('DEBUG: Body script executed');
+    </script>
+
+    <!-- Add our enhanced graphics and animation scripts -->
+    <script src="assets/replace-graphics.js"></script>
+    <script src="assets/ensure-graphics.js"></script>
+    <script src="assets/direct-graphics-injector.js"></script>
+    <script src="assets/update-graphics.js"></script>
+    <script src="assets/test-animation.js"></script>
+    <script src="assets/ensure-background.js"></script>
+    <script src="assets/ensure-loading-screen.js"></script>
   </body>
 </html>

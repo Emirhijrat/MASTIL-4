@@ -139,30 +139,65 @@ export function useGameState(config: GameConfig) {
       setAiElement(assignedAiElement);
 
       console.log('=== BUILDING INITIALIZATION ===');
-      if (!initialBuildingData || !Array.isArray(initialBuildingData)) {
-        throw new Error('initialBuildingData is invalid or not an array');
+      console.log('Type of initialBuildingData:', typeof initialBuildingData);
+      if (!initialBuildingData) {
+        console.error('initialBuildingData is undefined or null');
+        throw new Error('initialBuildingData is undefined or null');
       }
-      console.log('Raw initialBuildingData:', JSON.stringify(initialBuildingData, null, 2));
+      
+      if (!Array.isArray(initialBuildingData)) {
+        console.error('initialBuildingData is not an array:', initialBuildingData);
+        throw new Error('initialBuildingData is not an array');
+      }
+      
+      console.log('Raw initialBuildingData length:', initialBuildingData.length);
+      console.log('Raw initialBuildingData:', initialBuildingData);
 
       console.log('Creating buildings...');
-      const newBuildings = initialBuildingData.map(item => ({
-        id: item[0],
-        owner: item[1],
-        units: item[2],
-        maxUnits: 100,
-        level: item[3],
-        position: item[4],
-        isInvulnerable: item[5] || false,
-      }));
+      const newBuildings = initialBuildingData.map((item, index) => {
+        console.log(`Processing building ${index}:`, item);
+        if (!item || !Array.isArray(item) || item.length < 5) {
+          console.error(`Invalid building data at index ${index}:`, item);
+          throw new Error(`Invalid building data at index ${index}`);
+        }
+        
+        const owner = item[1];
+        let buildingElement = undefined;
+        
+        // Assign elements to player and enemy buildings
+        if (owner === 'player') {
+          buildingElement = element;
+        } else if (owner === 'enemy') {
+          buildingElement = assignedAiElement;
+        }
+        
+        const building = {
+          id: item[0],
+          owner: owner,
+          units: item[2],
+          maxUnits: 100,
+          level: item[3],
+          position: item[4],
+          isInvulnerable: item[5] || false,
+          element: buildingElement
+        };
+        
+        console.log(`Created building:`, building);
+        return building;
+      });
 
+      console.log('Populating buildings in handlePlayerSetup:', JSON.stringify(newBuildings));
       console.log('Setting buildings state...');
       setBuildings(newBuildings);
       
       console.log('Setting game start time...');
       localStorage.setItem('gameStartTime', Date.now().toString());
       
-      console.log('Hiding player input popup...');
+      console.log('Attempting to hide pop-up in handlePlayerSetup.');
       setShowPlayerInputPopup(false);
+      
+      console.log('Attempting to show greeting message.');
+      showMessage(`Majestät ${name}, mögen Eure ${element}-Kräfte den Feind bezwingen!`);
       
       console.log('=== PLAYER SETUP COMPLETE ===');
       console.log('Final state:', {

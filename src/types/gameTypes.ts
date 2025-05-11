@@ -35,6 +35,22 @@ export interface UnitAnimationData {
   duration: number; 
 }
 
+export interface ArrowAnimationData {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  units: number;
+  owner: OwnerType;
+  x: number;
+  y: number;
+  targetX: number;
+  targetY: number;
+  progress: number;
+  distance: number;
+  startTime: number;
+  duration: number;
+}
+
 export interface GameConfig {
   unitGenerationInterval: number;
   maxUnitsPerBuilding: number;

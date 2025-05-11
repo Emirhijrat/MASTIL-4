@@ -1,0 +1,36 @@
+/* MASTIL Game Background Styles */
+
+/* Apply the background to both potential game containers */
+.game-board {
+  background-image: url('https://iili.io/3vhdSja.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: #1a1a1a !important;
+}
+
+.game-area {
+  background-image: url('https://iili.io/3vhdSja.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: #1a1a1a !important;
+}
+
+/* Ensure proper display on mobile devices */
+@media (max-width: 640px) {
+  .game-board, .game-area {
+    background-size: contain !important;
+    background-position: center center !important;
+  }
+}
+
+/* Fix for iPhones with notches */
+@supports (padding: max(0px)) {
+  .game-board, .game-area {
+    padding-top: max(env(safe-area-inset-top), 0px);
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    padding-left: max(env(safe-area-inset-left), 0px);
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+} 

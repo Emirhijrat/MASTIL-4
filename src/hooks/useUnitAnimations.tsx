@@ -1,41 +1,41 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Building, OwnerType, UnitAnimationData } from '../types/gameTypes';
-import { createContext, useContext } from 'react';
-import { getBuildingCenter } from '../utils/getElementCenter';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Building, OwnerType, ArrowAnimationData } from '../types/gameTypes';
 
+// Callback after animation completes
 type OnCompleteCallback = (targetId: string, units: number, owner: OwnerType) => void;
 
-// UnitAnimationData might not need progressX/Y for arrows, but duration is key for arrow visibility time.
-// If distance is also not used by AttackArrow, it could be removed too.
-// For now, we keep them but don't update progressX/Y for visual movement.
-interface ArrowAnimationData extends Omit<UnitAnimationData, 'progressX' | 'progressY'> {
-  // x, y are source coordinates for the arrow
-  // targetX, targetY are target coordinates for the arrow
-  // duration is how long the arrow is shown
-}
-
-const UnitAnimationContext = createContext<{
-  // Store ArrowAnimationData for active arrows
-  activeArrows: ArrowAnimationData[]; 
+// Central location for animation-related state
+interface UnitAnimationContextType {
+  activeArrows: ArrowAnimationData[];
+  highlightedSourceId: string | null;
+  highlightedTargetId: string | null;
   startUnitAttack: (
     source: Building,
     target: Building,
     units: number,
     owner: OwnerType,
-    onComplete: OnCompleteCallback 
+    onComplete: OnCompleteCallback
   ) => void;
-}>({
+}
+
+const UnitAnimationContext = createContext<UnitAnimationContextType>({
   activeArrows: [],
+  highlightedSourceId: null,
+  highlightedTargetId: null,
   startUnitAttack: () => {},
 });
 
 export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeArrows, setActiveArrows] = useState<ArrowAnimationData[]>([]);
+  const [highlightedSourceId, setHighlightedSourceId] = useState<string | null>(null);
+  const [highlightedTargetId, setHighlightedTargetId] = useState<string | null>(null);
+  
   const animationCallbacks = useRef<Map<string, OnCompleteCallback>>(new Map());
   const animationFrameId = useRef<number | null>(null);
   const containerDimensions = useRef({ width: 0, height: 0 });
   const isMounted = useRef(false);
 
+  // Track container dimensions for positioning
   useEffect(() => {
     isMounted.current = true;
     const updateDimensions = () => {
@@ -55,41 +55,66 @@ export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  // This useEffect now only manages the DURATION of the arrow display
+  // Animation update loop
   useEffect(() => {
-    const updateArrowVisibility = () => {
-      if (!isMounted.current) return;
+    const updateAnimations = () => {
       const now = performance.now();
-      setActiveArrows(prevArrows => {
-        if (prevArrows.length === 0) {
-          if (isMounted.current) animationFrameId.current = requestAnimationFrame(updateArrowVisibility);
-          return prevArrows;
-        }
-
-        const updatedArrows = prevArrows.map(arrow => ({
-          ...arrow,
-          progress: Math.min((now - arrow.startTime) / arrow.duration, 1),
-        }));
-
+      let shouldUpdateHighlights = false;
+      
+      setActiveArrows(prev => {
+        // Update all active animations
+        const updatedArrows = prev.map(arrow => {
+          const elapsed = now - arrow.startTime;
+          const progress = Math.min(elapsed / arrow.duration, 1);
+          return { ...arrow, progress };
+        });
+        
+        // Find completed animations
         const completed = updatedArrows.filter(arrow => arrow.progress >= 1);
         const remaining = updatedArrows.filter(arrow => arrow.progress < 1);
-
-        completed.forEach(arrow => {
-          const callback = animationCallbacks.current.get(arrow.id);
-          if (callback) {
-            console.log(`[useUnitAnimations] Arrow ${arrow.id} display time ended. Calling onComplete.`);
-            callback(arrow.targetId, arrow.units, arrow.owner);
-            animationCallbacks.current.delete(arrow.id);
-          }
-        });
-        if (isMounted.current) animationFrameId.current = requestAnimationFrame(updateArrowVisibility);
+        
+        // Process completed animations
+        if (completed.length > 0) {
+          shouldUpdateHighlights = true;
+          completed.forEach(arrow => {
+            const callback = animationCallbacks.current.get(arrow.id);
+            if (callback) {
+              // Invoke callback with target, units and owner info
+              callback(arrow.targetId, arrow.units, arrow.owner);
+              animationCallbacks.current.delete(arrow.id);
+            }
+          });
+        }
+        
         return remaining;
       });
+      
+      // Clear source/target highlights when all animations are done
+      if (shouldUpdateHighlights && activeArrows.length === 0) {
+        setHighlightedSourceId(null);
+        setHighlightedTargetId(null);
+      }
+      
+      animationFrameId.current = requestAnimationFrame(updateAnimations);
     };
-    if (isMounted.current) animationFrameId.current = requestAnimationFrame(updateArrowVisibility);
-    // Cleanup is handled in the mounting useEffect
-  }, []);
+    
+    animationFrameId.current = requestAnimationFrame(updateAnimations);
+    
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, [activeArrows.length]);
 
+  // Helper function to get building center coordinates
+  const getBuildingCenter = (building: Building, containerWidth: number, containerHeight: number) => {
+    const x = building.position.x * containerWidth;
+    const y = building.position.y * containerHeight;
+    return { x, y };
+  };
+
+  // Start a unit attack animation
   const startUnitAttack = useCallback((
     source: Building,
     target: Building,
@@ -98,6 +123,8 @@ export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
     onComplete: OnCompleteCallback
   ) => {
     console.log(`[useUnitAnimations] startUnitAttack: ${source.id} -> ${target.id}, Units: ${units}`);
+    
+    // Get current container dimensions
     const { width: currentContainerWidth, height: currentContainerHeight } = containerDimensions.current;
     if (currentContainerWidth === 0 || currentContainerHeight === 0) {
       console.error("[useUnitAnimations] CRITICAL: Game area dimensions zero. Cannot place arrow.");
@@ -105,6 +132,8 @@ export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
       onComplete(target.id, units, owner);
       return;
     }
+    
+    // Get building center positions
     const sourceCenter = getBuildingCenter(source, currentContainerWidth, currentContainerHeight);
     const targetCenter = getBuildingCenter(target, currentContainerWidth, currentContainerHeight);
     if (!sourceCenter || !targetCenter) {
@@ -113,39 +142,59 @@ export const UnitAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    const arrowDisplayDuration = 1500; // Arrow visible for 1.5 seconds
+    // Calculate distance and animation duration
+    const deltaX = targetCenter.x - sourceCenter.x;
+    const deltaY = targetCenter.y - sourceCenter.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    // Calculate animation duration based on distance (4-8 seconds)
+    const baseDuration = 4000; // 4 seconds base
+    const maxAdditionalDuration = 4000; // Up to 4 extra seconds
+    const distanceFactor = Math.min(1, distance / 500); // Normalize distance (can adjust this based on game scale)
+    const animationDuration = baseDuration + (distanceFactor * maxAdditionalDuration);
+    
+    // Create unique animation ID
     const animId = `arrow_${performance.now().toFixed(0)}_${Math.random().toString(16).slice(2, 8)}`;
     animationCallbacks.current.set(animId, onComplete);
 
+    // Highlight source and target buildings
+    setHighlightedSourceId(source.id);
+    setHighlightedTargetId(target.id);
+
+    // Add the new arrow animation
     setActiveArrows(prev => {
       const newArrowData: ArrowAnimationData = {
-        id: animId, sourceId: source.id, targetId: target.id, units, owner,
-        x: sourceCenter.x, y: sourceCenter.y, targetX: targetCenter.x, targetY: targetCenter.y,
-        progress: 0, // Progress now just tracks visibility duration
-        distance: 0, // Distance might not be needed for static arrows
+        id: animId, 
+        sourceId: source.id, 
+        targetId: target.id, 
+        units, 
+        owner,
+        x: sourceCenter.x, 
+        y: sourceCenter.y, 
+        targetX: targetCenter.x, 
+        targetY: targetCenter.y,
+        progress: 0,
+        distance,
         startTime: performance.now(), 
-        duration: arrowDisplayDuration, 
+        duration: animationDuration,
       };
       console.log('[useUnitAnimations] Adding new arrow data:', newArrowData);
       return [...prev, newArrowData];
     });
-  }, []); 
+  }, []);
 
   return (
-    <UnitAnimationContext.Provider value={{ activeArrows, startUnitAttack }}>
+    <UnitAnimationContext.Provider 
+      value={{ 
+        activeArrows, 
+        highlightedSourceId, 
+        highlightedTargetId, 
+        startUnitAttack 
+      }}
+    >
       {children}
     </UnitAnimationContext.Provider>
   );
 };
 
-export const useUnitAnimations = () => {
-  const context = useContext(UnitAnimationContext);
-  if (!context) throw new Error('useUnitAnimations must be used within a UnitAnimationProvider');
-  return { activeArrows: context.activeArrows }; // Expose activeArrows
-};
-
-export const useUnitAnimationDispatch = () => {
-  const context = useContext(UnitAnimationContext);
-  if (!context) throw new Error('useUnitAnimationDispatch must be used within a UnitAnimationProvider');
-  return { startUnitAnimation: context.startUnitAttack }; // Rename exported function for clarity
-};
+export const useUnitAnimations = () => useContext(UnitAnimationContext);

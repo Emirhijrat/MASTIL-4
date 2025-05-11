@@ -21,6 +21,7 @@ html, body {
   padding: 0;
   overflow: hidden;
   position: fixed;
+  -webkit-overflow-scrolling: touch;
 }
 
 #root {
@@ -117,10 +118,42 @@ body {
     max-height: 100vh;
     max-width: 100vw;
     border-radius: 0;
+    margin: 0;
   }
   
   .app-container {
     padding: 0;
+  }
+  
+  /* Ensure buildings are properly sized and visible on small screens */
+  .building {
+    --game-min-touch: 40px; /* Slightly smaller on mobile */
+  }
+  
+  /* Better text visibility on mobile */
+  .text-shadow-strong {
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9),
+                 -1px -1px 3px rgba(0, 0, 0, 0.9),
+                 1px -1px 3px rgba(0, 0, 0, 0.9),
+                 -1px 1px 3px rgba(0, 0, 0, 0.9);
+  }
+}
+
+/* iPhone X and newer notch handling */
+@supports (padding: max(0px)) {
+  .app-container {
+    padding-top: max(env(safe-area-inset-top), 0px);
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    padding-left: max(env(safe-area-inset-left), 0px);
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+}
+
+/* iPad fixes */
+@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+  .game-container {
+    max-width: 95vw;
+    max-height: 95vh;
   }
 }
 

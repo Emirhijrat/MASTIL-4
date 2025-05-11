@@ -15,6 +15,7 @@ import MessageBox from './MessageBox';
 import EndScreen from './EndScreen';
 import SettingsPanel from './SettingsPanel';
 import DebugOverlay from './DebugOverlay';
+import ErrorBoundary from './ErrorBoundary';
 
 interface GameBoardProps {
   buildings: Building[];
@@ -36,13 +37,15 @@ const MAX_BUILDING_LEVEL = gameConfig.maxBuildingLevel || 5;
 
 const GameBoard: React.FC<GameBoardProps> = (props) => {
   console.log('=== GAMEBOARD RENDER START ===');
-  console.log('Received props:', {
-    buildingsCount: props.buildings.length,
-    selectedBuildingId: props.selectedBuildingId,
-    gameOver: props.gameOver,
-    message: props.message
-  });
-
+  console.log('GameBoard.tsx rendering with buildings count:', props.buildings.length);
+  console.log('Buildings data:', JSON.stringify(props.buildings.map(b => ({
+    id: b.id,
+    owner: b.owner,
+    units: b.units,
+    position: b.position,
+    element: b.element
+  }))));
+  
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   
   useEffect(() => {
@@ -52,7 +55,11 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
 
   useEffect(() => {
     console.log('=== GAMEBOARD STATE UPDATE ===');
-    console.log('buildings:', props.buildings.map(b => ({ id: b.id, owner: b.owner })));
+    console.log('buildings:', props.buildings.map(b => ({ 
+      id: b.id, 
+      owner: b.owner,
+      element: b.element 
+    })));
     console.log('selectedBuildingId:', props.selectedBuildingId);
     console.log('gameOver:', props.gameOver);
   }, [props.buildings, props.selectedBuildingId, props.gameOver]);
@@ -82,36 +89,38 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
   const buildingBaseSize = 6;
 
   return (
-    <div className="w-full h-full max-w-[min(90vh,800px)] aspect-[4/3] sm:aspect-[16/9] 
-                    rounded-xl shadow-2xl overflow-hidden flex flex-col 
-                    border border-[var(--mastil-border)] touch-manipulation game-board">
-      <StatusBar 
-        playerBuildingCount={props.playerBuildingCount} 
-        enemyBuildingCount={props.enemyBuildingCount}
-        onOpenSettings={() => setIsSettingsPanelOpen(true)}
-      />
-      
-      <div className="flex-grow relative">
-        <Map 
+    <ErrorBoundary>
+      <div className="w-full h-full max-w-[min(90vh,800px)] aspect-[4/3] sm:aspect-[16/9] 
+                      rounded-xl shadow-2xl overflow-hidden flex flex-col 
+                      border border-[var(--mastil-border)] touch-manipulation game-board">
+        <StatusBar 
+          playerBuildingCount={props.playerBuildingCount} 
+          enemyBuildingCount={props.enemyBuildingCount}
+          onOpenSettings={() => setIsSettingsPanelOpen(true)}
+        />
+        
+        <div className="flex-grow relative">
+          <Map 
+            buildings={props.buildings}
+            selectedBuildingId={props.selectedBuildingId}
+            onBuildingClick={props.selectBuilding}
+            getUpgradeCost={props.getUpgradeCost}
+            onUpgrade={props.upgradeBuilding}
+          />
+        </div>
+        
+        <MessageBox message={props.message} />
+
+        {isSettingsPanelOpen && (
+          <SettingsPanel onClose={() => setIsSettingsPanelOpen(false)} />
+        )}
+
+        <DebugOverlay 
           buildings={props.buildings}
-          selectedBuildingId={props.selectedBuildingId}
-          onBuildingClick={props.selectBuilding}
-          getUpgradeCost={props.getUpgradeCost}
-          onUpgrade={props.upgradeBuilding}
+          onCoordinateUpdate={handleCoordinateUpdate}
         />
       </div>
-      
-      <MessageBox message={props.message} />
-
-      {isSettingsPanelOpen && (
-        <SettingsPanel onClose={() => setIsSettingsPanelOpen(false)} />
-      )}
-
-      <DebugOverlay 
-        buildings={props.buildings}
-        onCoordinateUpdate={handleCoordinateUpdate}
-      />
-    </div>
+    </ErrorBoundary>
   );
 };
 

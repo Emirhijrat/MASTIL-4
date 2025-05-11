@@ -4,11 +4,13 @@ import LoadingScreen from './components/LoadingScreen';
 import PlayerNameInputPopup from './components/PlayerNameInputPopup';
 import { useGameState } from './hooks/useGameState';
 import { useTheme } from './hooks/useTheme';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 import { gameConfig } from './utils/gameConfig';
 
 function App() {
   console.log('=== APP RENDER START ===');
+  console.log('App.tsx rendering - initializing component');
   
   const { theme } = useTheme();
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -34,6 +36,9 @@ function App() {
     playerBuildingCount,
     enemyBuildingCount
   } = useGameState(gameConfig);
+
+  console.log('App.tsx rendering - showPlayerInputPopup:', showPlayerInputPopup);
+  console.log('App.tsx rendering - buildings.length:', buildings.length);
 
   useEffect(() => {
     try {
@@ -87,34 +92,38 @@ function App() {
 
   if (showPlayerInputPopup) {
     return (
-      <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
-        <PlayerNameInputPopup onSubmit={handlePlayerSetup} />
-      </div>
+      <ErrorBoundary>
+        <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
+          <PlayerNameInputPopup onSubmit={handlePlayerSetup} />
+        </div>
+      </ErrorBoundary>
     );
   }
   
   return (
-    <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
-      <GameBoard
-        buildings={buildings}
-        selectedBuildingId={selectedBuildingId}
-        selectBuilding={selectBuilding}
-        gameOver={gameOver}
-        gameOverMessage={gameOverMessage}
-        restartGame={restartGame}
-        getUpgradeCost={getUpgradeCost}
-        upgradeBuilding={upgradeBuilding}
-        playerBuildingCount={playerBuildingCount}
-        enemyBuildingCount={enemyBuildingCount}
-        message={message || ''}
-        showMessage={showMessage}
-      />
-      {message && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-700 text-white px-4 py-2 rounded shadow-lg z-[2500]">
-          {message}
-        </div>
-      )}
-    </div>
+    <ErrorBoundary>
+      <div className="app-container min-h-full flex flex-col items-center justify-center p-1 sm:p-2 bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]">
+        <GameBoard
+          buildings={buildings}
+          selectedBuildingId={selectedBuildingId}
+          selectBuilding={selectBuilding}
+          gameOver={gameOver}
+          gameOverMessage={gameOverMessage}
+          restartGame={restartGame}
+          getUpgradeCost={getUpgradeCost}
+          upgradeBuilding={upgradeBuilding}
+          playerBuildingCount={playerBuildingCount}
+          enemyBuildingCount={enemyBuildingCount}
+          message={message || ''}
+          showMessage={showMessage}
+        />
+        {message && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-700 text-white px-4 py-2 rounded shadow-lg z-[2500]">
+            {message}
+          </div>
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }
 

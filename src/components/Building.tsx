@@ -4,6 +4,8 @@ import { getColorClasses } from '../utils/helpers';
 import ContextualUpgradeButton from './ContextualUpgradeButton';
 import UnitAnimations from './UnitAnimation';
 import MedievalHouse from './MedievalHouse';
+import MedievalTower from './MedievalTower';
+import { useUnitAnimations } from '../hooks/useUnitAnimations';
 
 interface BuildingProps {
   building: BuildingType;
@@ -22,15 +24,39 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
   canUpgrade,
   onUpgrade
 }, ref) => {
+  // Access highlighted building IDs from the animations context
+  const { highlightedSourceId, highlightedTargetId } = useUnitAnimations();
+  
+  const isSource = highlightedSourceId === building.id;
+  const isTarget = highlightedTargetId === building.id;
+  
+  // Create CSS classes for visual highlighting 
+  const getHighlightClass = () => {
+    if (isSource) return 'building-highlight-source';
+    if (isTarget) return 'building-highlight-target';
+    if (selected) return 'selected';
+    return '';
+  };
   
   const getBuildingVisual = () => {
     if (building.owner === 'neutral') {
       // Use a deterministic variation based on the building's ID
-      const variation = (parseInt(building.id) % 3) + 1 as 1 | 2 | 3;
-      return <MedievalHouse variation={variation} selected={selected} />;
+      const variation = (parseInt(building.id.replace(/\D/g, '')) % 3) + 1 as 1 | 2 | 3;
+      return <MedievalHouse variation={variation} selected={selected || isSource || isTarget} />;
     }
     
-    // ... existing code for player and enemy buildings ...
+    if (building.owner === 'player' || building.owner === 'enemy') {
+      return (
+        <MedievalTower 
+          owner={building.owner} 
+          selected={selected}
+          isSource={isSource}
+          isTarget={isTarget}
+          element={building.element}
+        />
+      );
+    }
+    
     return null;
   };
 
@@ -38,7 +64,7 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
     <div 
       ref={ref}
       className={`building absolute flex flex-col items-center justify-center 
-                 ${selected ? 'selected' : ''} touch-manipulation select-none`}
+                 ${getHighlightClass()} touch-manipulation select-none`}
       style={{
         left: `calc(${building.position.x * 100}% - var(--game-min-touch) / 2)`,
         top: `calc(${building.position.y * 100}% - var(--game-min-touch) / 2)`,
@@ -68,8 +94,8 @@ const Building = forwardRef<HTMLDivElement, BuildingProps>(({
       </div>
 
       {/* Level text centered below the building */}
-      <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[0.6rem] sm:text-xs font-semibold text-white z-10 text-shadow-strong">
-        L{building.level}
+      <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[0.7rem] sm:text-sm font-medium text-white text-shadow-strong">
+        Lvl {building.level}
       </span>
     </div>
   );

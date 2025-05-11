@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --mastil-source: #10B981;  /* Green for source highlights */
+  --mastil-target: #7C3AED;  /* Purple for target highlights */
+}
+
 @layer utilities {
   .animate-fadeIn {
     animation: fadeIn 0.3s ease-in-out;
@@ -13,6 +18,14 @@
                 2px -2px 4px rgba(0, 0, 0, 0.8),
                 -2px 2px 4px rgba(0, 0, 0, 0.8);
   }
+  
+  .animate-pulse-source {
+    animation: pulseSource 1.5s ease-in-out;
+  }
+  
+  .animate-pulse-target {
+    animation: pulseTarget 1.5s ease-in-out;
+  }
 }
 
 @keyframes fadeIn {
@@ -21,6 +34,24 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes pulseSource {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px var(--mastil-source));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px var(--mastil-source));
+  }
+}
+
+@keyframes pulseTarget {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px var(--mastil-target));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px var(--mastil-target));
   }
 }
 
@@ -38,6 +69,18 @@
 .building.selected {
   transform: scale(1.05);
   box-shadow: 0 0 20px var(--mastil-accent);
+}
+
+.building.building-highlight-source {
+  transform: scale(1.1);
+  z-index: 10;
+  animation: pulseSource 1.5s ease-in-out;
+}
+
+.building.building-highlight-target {
+  transform: scale(1.1);
+  z-index: 10;
+  animation: pulseTarget 1.5s ease-in-out;
 }
 
 .unit-bubble {

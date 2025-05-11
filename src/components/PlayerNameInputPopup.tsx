@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent } from 'react';
 import { ElementType, ELEMENTS } from '../types/gameTypes';
 import './PlayerNameInputPopup.css';
 
@@ -7,47 +7,62 @@ interface PlayerNameInputPopupProps {
 }
 
 const PlayerNameInputPopup: React.FC<PlayerNameInputPopupProps> = ({ onSubmit }) => {
+  console.log("PlayerNameInputPopup rendering.");
+  
   const [playerName, setPlayerName] = useState('');
   const [selectedElement, setSelectedElement] = useState<ElementType>(ELEMENTS[0]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (playerName.trim() && selectedElement) {
       console.log('=== PLAYER INPUT SUBMIT ===');
       console.log('Name:', playerName.trim());
       console.log('Element:', selectedElement);
-      onSubmit(playerName.trim(), selectedElement);
+      console.log('About to call onSubmit from props with these values');
+      
+      try {
+        onSubmit(playerName.trim(), selectedElement);
+        console.log('onSubmit handler completed successfully');
+      } catch (error) {
+        console.error('Error in onSubmit handler:', error);
+        throw error; // Re-throw to be caught by ErrorBoundary
+      }
     } else {
       alert('Please enter your name and select an element.');
     }
   };
 
+  const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setPlayerName(e.target.value);
+  };
+
+  console.log('PlayerNameInputPopup state:', { playerName, selectedElement });
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[var(--mastil-bg-secondary)] rounded-xl shadow-xl w-full max-w-md p-6 animate-fadeIn">
-        <h2 className="text-xl sm:text-2xl font-bold text-[var(--mastil-text-primary)] mb-6 text-center">
+    <div className="popup-overlay">
+      <div className="popup-container medieval-popup">
+        <h2 className="popup-title">
           Wie lautet Euer Name, Majestät?
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Euer Name..."
-            className="w-full px-4 py-2 rounded-lg bg-[var(--mastil-bg-primary)] 
-                     text-[var(--mastil-text-primary)] border border-[var(--mastil-border)]
-                     focus:outline-none focus:ring-2 focus:ring-[var(--mastil-accent)]"
-            autoFocus
-          />
-          <div className="grid grid-cols-2 gap-2">
+        <form onSubmit={handleSubmit} className="popup-form">
+          <div className="form-group">
+            <input
+              type="text"
+              value={playerName}
+              onChange={handleNameChange}
+              placeholder="Euer Name..."
+              className="medieval-input"
+              autoFocus
+            />
+          </div>
+          <div className="element-selection">
             {ELEMENTS.map((element) => (
               <button
                 key={element}
                 type="button"
-                className={`px-4 py-2 rounded-lg border transition-colors
-                          ${selectedElement === element 
-                            ? 'bg-[var(--mastil-accent)] text-white' 
-                            : 'bg-[var(--mastil-bg-primary)] text-[var(--mastil-text-primary)]'}`}
+                className={`medieval-button element-button element-${element.toLowerCase()} ${
+                  selectedElement === element ? 'selected' : ''
+                }`}
                 onClick={() => setSelectedElement(element)}
               >
                 {element.charAt(0).toUpperCase() + element.slice(1)}
@@ -56,9 +71,7 @@ const PlayerNameInputPopup: React.FC<PlayerNameInputPopupProps> = ({ onSubmit })
           </div>
           <button
             type="submit"
-            className="w-full bg-[var(--mastil-accent)] hover:bg-[var(--mastil-accent-hover)]
-                     active:bg-[var(--mastil-accent-active)] text-white font-semibold
-                     py-2 px-4 rounded-lg transition-colors duration-150"
+            className="medieval-button submit-button medieval-button-primary"
           >
             Bestätigen
           </button>
