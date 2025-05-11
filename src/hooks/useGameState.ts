@@ -206,13 +206,48 @@ export function useGameState(config: GameConfig) {
     setShowPlayerInputPopup(true);
   }, [stopBackgroundMusic]);
 
+  // Slower unit generation for neutrals
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!gameOver && !showPlayerInputPopup) {
+        setBuildings(prevBuildings => {
+          const gameStartTime = localStorage.getItem('gameStartTime');
+          const now = Date.now();
+          const nineHoursInMs = 9 * 60 * 60 * 1000;
+          const isInvulnerable = gameStartTime && (now - parseInt(gameStartTime)) < nineHoursInMs;
+          let changed = false;
+          const newBuildings = prevBuildings.map(building => {
+            if (
+              building.owner === 'neutral' &&
+              building.units < building.maxUnits &&
+              !isInvulnerable
+            ) {
+              changed = true;
+              return {
+                ...building,
+                units: building.units + 1
+              };
+            }
+            return building;
+          });
+          return changed ? newBuildings : prevBuildings;
+        });
+      }
+    }, 15000); // 15 seconds
+    return () => clearInterval(interval);
+  }, [gameOver, showPlayerInputPopup]);
+
+  // Player/enemy unit generation (unchanged)
   useEffect(() => {
     const interval = setInterval(() => {
       if (!gameOver && !showPlayerInputPopup) {
         setBuildings(prevBuildings => {
           let changed = false;
           const newBuildings = prevBuildings.map(building => {
-            if (building.units < building.maxUnits) {
+            if (
+              (building.owner === 'player' || building.owner === 'enemy') &&
+              building.units < building.maxUnits
+            ) {
               changed = true;
               return {
                 ...building,
@@ -221,35 +256,31 @@ export function useGameState(config: GameConfig) {
             }
             return building;
           });
-          
           return changed ? newBuildings : prevBuildings;
         });
       }
     }, config.unitGenerationInterval);
-    
     return () => clearInterval(interval);
   }, [config.unitGenerationInterval, gameOver, showPlayerInputPopup]);
 
+  // Neutral self-upgrading effect (adjusted to every 12s)
   useEffect(() => {
     const interval = setInterval(() => {
       if (!gameOver && !showPlayerInputPopup) {
         const now = Date.now();
-        if (now - lastNeutralUpgrade >= 10000) {
+        if (now - lastNeutralUpgrade >= 12000) { // 12 seconds
           setBuildings(prevBuildings => {
             const neutralBuildings = prevBuildings.filter(b => b.owner === 'neutral');
             let upgraded = false;
-
             const buildingToUpgrade = neutralBuildings.find(building => 
               building.units > 20 + (building.level * 5) &&
               building.level < config.maxBuildingLevel &&
               Math.random() < 0.3
             );
-
             if (buildingToUpgrade) {
               console.log(`[Neutral] Building ${buildingToUpgrade.id} upgrading from level ${buildingToUpgrade.level}`);
               upgraded = true;
               setLastNeutralUpgrade(now);
-              
               return prevBuildings.map(building => 
                 building.id === buildingToUpgrade.id
                   ? {
@@ -265,8 +296,7 @@ export function useGameState(config: GameConfig) {
           });
         }
       }
-    }, 5000);
-
+    }, 12000); // 12 seconds
     return () => clearInterval(interval);
   }, [config.maxUnitsPerBuilding, config.maxBuildingLevel, gameOver, lastNeutralUpgrade, showPlayerInputPopup]);
 
