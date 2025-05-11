@@ -257,7 +257,7 @@ const findAISourceBuildingForAttack = (aiBuildings: Building[], minAttackThresho
 };
 
 // Enhanced AI decision making
-export const makeAIDecision = (
+const makeAIDecision = (
   buildings: Building[],
   showMessage: (message: string) => void
 ): { type: 'attack', source: Building, target: Building } | { type: 'upgrade', target: Building } | { type: 'idle' } => {
@@ -324,7 +324,7 @@ export const makeAIDecision = (
   return { type: 'idle' };
 };
 
-export const handleAIEvent = (
+const handleAIEvent = (
   eventType: 'conquest' | 'loss' | 'neutral',
   showMessage: (message: string) => void
 ): void => {
