@@ -245,8 +245,9 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       // Add the requested logs
       console.log('[handlePlayerSetup] Function START. Received playerElement:', element, 'aiElement:', assignedAiElement);
       
-      // Get access to the raw initialBuildingData
-      const initialBuildingData = require('../utils/initialData').initialBuildingData;
+      // Get access to the raw initialBuildingData - using the imported value instead of require
+      // const initialBuildingData = require('../utils/initialData').initialBuildingData;
+      // Using the already imported data from initialData
       console.log('[handlePlayerSetup] Raw initialBuildingData imported:', JSON.stringify(initialBuildingData));
       
       console.log('[handlePlayerSetup] Calling mapInitialDataToBuildings...');
