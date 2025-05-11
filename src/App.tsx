@@ -209,7 +209,7 @@ function App() {
               
               // Funktion zum Überprüfen, ob die Gebäude initialisiert wurden
               let attempts = 0;
-              const maxAttempts = 10;
+              const maxAttempts = 15;
               
               const checkBuildingsInitialized = () => {
                 attempts++;
@@ -222,7 +222,11 @@ function App() {
                 } else if (attempts < maxAttempts) {
                   // Gebäude wurden noch nicht initialisiert, erneut versuchen
                   console.warn('[App] Buildings not initialized properly, retrying...');
-                  setTimeout(checkBuildingsInitialized, 500);
+                  if (attempts === 5) {
+                    // Informiere den Benutzer über die Verzögerung
+                    showMessage("Das Spiel wird initialisiert. Bitte haben Sie einen Moment Geduld...");
+                  }
+                  setTimeout(checkBuildingsInitialized, 1000);
                 } else {
                   // Maximale Anzahl von Versuchen erreicht, Neustart des Spiels
                   console.error('[App] Max initialization attempts reached, restarting game');
