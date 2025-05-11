@@ -6,8 +6,12 @@ import { handleAIEvent, getRandomMessage, makeAIDecision } from '../ai/enemyAI';
 import { useBuildingManagement } from './useBuildingManagement';
 import { useNeutralBehavior } from './useNeutralBehavior';
 import useGameCommentary from './useGameCommentary';
+import { gameConfig as defaultGameConfig } from '../utils/gameConfig';
 
-export function useGameState(config: GameConfig) {
+export function useGameState(config: GameConfig = defaultGameConfig) {
+  // Ensure config is never undefined
+  const gameConfig = config || defaultGameConfig;
+
   // Player state
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -64,7 +68,7 @@ export function useGameState(config: GameConfig) {
     handleUnitsArrival: handleUnitsArrivalBase,
     initializeBuildings,
     setupBuildingUnitGeneration
-  } = useBuildingManagement(config);
+  } = useBuildingManagement(gameConfig);
 
   // Log buildings state updates
   useEffect(() => {
@@ -328,7 +332,7 @@ export function useGameState(config: GameConfig) {
     gameOver,
     showPlayerInputPopup,
     showMessage,
-    config,
+    config: gameConfig,
     startUnitAnimation,
     handleUnitsArrival,
     isPaused,
@@ -341,11 +345,11 @@ export function useGameState(config: GameConfig) {
     const cleanup = setupBuildingUnitGeneration(
       gameOver,
       showPlayerInputPopup,
-      config.unitGenerationInterval,
+      gameConfig.unitGenerationInterval,
       isPaused
     );
     return cleanup;
-  }, [setupBuildingUnitGeneration, gameOver, showPlayerInputPopup, config.unitGenerationInterval, isPaused]);
+  }, [setupBuildingUnitGeneration, gameOver, showPlayerInputPopup, gameConfig.unitGenerationInterval, isPaused]);
 
   // Check win conditions
   useEffect(() => {
