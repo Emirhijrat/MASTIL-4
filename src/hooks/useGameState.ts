@@ -430,6 +430,11 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
     // Force a commentary message for testing
     forceComment,
     unitsInProduction,
-    generateUnits
+    generateUnits,
+    // Add player object
+    player: {
+      gold: buildings.filter(b => b.owner === 'player').reduce((sum, b) => sum + b.units, 0),
+      score: buildings.filter(b => b.owner === 'player').length * 100
+    }
   };
 }

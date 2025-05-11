@@ -36,7 +36,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
     buildings, 
     selectedBuildingId, 
     handleBuildingClick, 
-    player, 
+    player = { gold: 0, score: 0 },
     getUpgradeCost, 
     handleUpgrade,
     unitsInProduction,
@@ -83,8 +83,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
                       rounded-xl shadow-2xl overflow-hidden flex flex-col 
                       border border-[var(--mastil-border)] touch-manipulation game-board`}>
         <StatusBar 
-          playerGold={player.gold} 
-          playerScore={player.score}
+          playerGold={player?.gold || 0} 
+          playerScore={player?.score || 0}
           onSettingsClick={() => onSettings()}
         />
         
@@ -119,7 +119,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
               selected={selectedBuildingId === building.id}
               onClick={(id) => handleBuildingClick(id)}
               upgradeCost={building.owner === 'player' ? getUpgradeCost(building.level) : undefined}
-              canUpgrade={building.owner === 'player' && player.gold >= getUpgradeCost(building.level)}
+              canUpgrade={building.owner === 'player' && (player?.gold || 0) >= getUpgradeCost(building.level)}
               onUpgrade={building.owner === 'player' ? handleUpgrade : undefined}
               unitsInProduction={unitsInProduction[building.id] || 0}
             />
