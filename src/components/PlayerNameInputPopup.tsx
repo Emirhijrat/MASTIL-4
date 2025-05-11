@@ -52,6 +52,11 @@ const PlayerNameInputPopup: React.FC<PlayerNameInputPopupProps> = ({ onSubmit })
               onChange={handleNameChange}
               placeholder="Euer Name..."
               className="medieval-input"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              inputMode="text"
               autoFocus
             />
           </div>

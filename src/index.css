@@ -101,3 +101,29 @@
     transform: translateY(0) translateX(-50%);
   }
 }
+
+/* Prevent iOS zoom when focusing on inputs */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important; /* Minimum font size to prevent iOS zoom */
+  }
+  
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  
+  /* iOS can be overly aggressive with zoom; this harms UX but fixes zoom issues */
+  html {
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+  }
+}
