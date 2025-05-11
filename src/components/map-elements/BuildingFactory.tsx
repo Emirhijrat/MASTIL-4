@@ -26,6 +26,9 @@ const BuildingFactory: React.FC<BuildingFactoryProps> = ({
   onUpgrade,
   unitsInProduction = 0
 }) => {
+  console.log(`[BuildingFactory] Rendering building ${building.id}:`, building);
+  console.log(`[BuildingFactory] Position for ${building.id}:`, building.position);
+  
   // Access highlighted building IDs from the animations context
   const { highlightedSourceId, highlightedTargetId } = useUnitAnimations();
   
@@ -34,6 +37,7 @@ const BuildingFactory: React.FC<BuildingFactoryProps> = ({
   
   // For neutral buildings, use the NeutralHouse component
   if (building.owner === 'neutral') {
+    console.log(`[BuildingFactory] Rendering neutral building ${building.id}`);
     return (
       <NeutralHouse
         building={building}
@@ -46,6 +50,7 @@ const BuildingFactory: React.FC<BuildingFactoryProps> = ({
   }
   
   // For player and enemy buildings, use the Tower component
+  console.log(`[BuildingFactory] Rendering ${building.owner} tower ${building.id}`);
   return (
     <Tower 
       building={building}

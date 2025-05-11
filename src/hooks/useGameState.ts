@@ -74,25 +74,47 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
   useEffect(() => {
     try {
       console.log('=== BUILDINGS STATE UPDATE ===');
-      console.log('Buildings array length:', buildings.length);
+      console.log('[useGameState] Buildings array length:', buildings.length);
+      console.log('[useGameState] showPlayerInputPopup:', showPlayerInputPopup);
+      console.log('[useGameState] playerElement:', playerElement);
+      console.log('[useGameState] aiElement:', aiElement);
+      
       if (buildings.length > 0) {
-        console.log('First building:', buildings[0]);
-        console.log('Last building:', buildings[buildings.length - 1]);
-        console.log('Building owners:', buildings.map(b => ({ id: b.id, owner: b.owner })));
+        console.log('[useGameState] Buildings array is populated:');
+        console.log('[useGameState] First building:', buildings[0]);
+        console.log('[useGameState] Last building:', buildings[buildings.length - 1]);
+        console.log('[useGameState] Building owners count:', {
+          player: buildings.filter(b => b.owner === 'player').length,
+          enemy: buildings.filter(b => b.owner === 'enemy').length,
+          neutral: buildings.filter(b => b.owner === 'neutral').length,
+          total: buildings.length
+        });
+        console.log('[useGameState] All buildings:', buildings.map(b => ({ 
+          id: b.id, 
+          owner: b.owner,
+          element: b.element,
+          position: b.position
+        })));
         
         // Validate building data
+        let hasErrors = false;
         buildings.forEach((building, index) => {
           if (!building.id || !building.owner || typeof building.units !== 'number' || !building.position) {
-            console.error(`Invalid building data at index ${index}:`, building);
+            console.error(`[useGameState] ERROR: Invalid building data at index ${index}:`, building);
+            hasErrors = true;
           }
         });
+        
+        if (!hasErrors) {
+          console.log('[useGameState] All buildings have valid data structure');
+        }
       } else {
-        console.log('Buildings array is empty');
+        console.warn('[useGameState] Buildings array is empty');
       }
     } catch (error) {
-      console.error('Error in buildings state effect:', error);
+      console.error('[useGameState] ERROR in buildings state effect:', error);
     }
-  }, [buildings]);
+  }, [buildings, showPlayerInputPopup, playerElement, aiElement]);
 
   const { startUnitAnimation } = useUnitAnimationDispatch();
   const { playAttackSound, playBackgroundMusic, stopBackgroundMusic, playDeploySound, playUpgradeSound } = useAudio();
@@ -196,14 +218,16 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
   const handlePlayerSetup = useCallback((name: string, element: ElementType) => {
     try {
       console.log('=== PLAYER SETUP START ===');
-      console.log('Input received:', { name, element });
+      console.log('[useGameState] handlePlayerSetup called with:', { name, element });
       
       if (!name || !element) {
+        console.error('[useGameState] ERROR: Invalid player setup: name or element is missing', { name, element });
         throw new Error('Invalid player setup: name or element is missing');
       }
 
       setPlayerName(name);
       setPlayerElement(element);
+      console.log('[useGameState] Set playerName and playerElement:', { name, element });
       
       // Determine AI element (different from player)
       let assignedAiElement: ElementType;
@@ -211,10 +235,15 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
         assignedAiElement = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)]; 
       } while (assignedAiElement === element);
       setAiElement(assignedAiElement);
+      console.log('[useGameState] Set aiElement:', assignedAiElement);
 
       // Initialize buildings with player and AI elements
+      console.log('[useGameState] About to call initializeBuildings with:', { element, assignedAiElement });
       const success = initializeBuildings(element, assignedAiElement);
+      console.log('[useGameState] initializeBuildings result:', success);
+      
       if (!success) {
+        console.error('[useGameState] ERROR: Failed to initialize buildings');
         throw new Error('Failed to initialize buildings');
       }
       
@@ -222,6 +251,7 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       localStorage.setItem('gameStartTime', Date.now().toString());
       
       // Hide the player input popup
+      console.log('[useGameState] Setting showPlayerInputPopup to false');
       setShowPlayerInputPopup(false);
       
       // Show greeting message
@@ -229,7 +259,7 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
       
       console.log('=== PLAYER SETUP COMPLETE ===');
     } catch (error) {
-      console.error('Error in handlePlayerSetup:', error);
+      console.error('[useGameState] ERROR in handlePlayerSetup:', error);
       throw error;
     }
   }, [initializeBuildings, showMessage]);

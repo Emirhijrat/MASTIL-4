@@ -38,33 +38,66 @@ export const initialBuildingData: RawBuildingData[] = [
 ];
 
 console.log('=== INITIAL DATA VERIFICATION ===');
-console.log('Total buildings defined:', initialBuildingData.length);
-console.log('Building IDs:', initialBuildingData.map(b => b[0]));
-console.log('Neutral buildings:', initialBuildingData
+console.log('[initialData.ts] Raw initialBuildingData array:', initialBuildingData);
+console.log('[initialData.ts] Total buildings defined:', initialBuildingData.length);
+console.log('[initialData.ts] Building IDs:', initialBuildingData.map(b => b[0]));
+console.log('[initialData.ts] Owners distribution:', {
+  player: initialBuildingData.filter(b => b[1] === 'player').length,
+  enemy: initialBuildingData.filter(b => b[1] === 'enemy').length,
+  neutral: initialBuildingData.filter(b => b[1] === 'neutral').length
+});
+console.log('[initialData.ts] Neutral buildings:', initialBuildingData
   .filter(b => b[1] === 'neutral')
   .map(b => ({
     id: b[0],
+    units: b[2],
     position: b[4]
   }))
 );
 
 // Map the initial data to the Building interface structure
 export const mapInitialDataToBuildings = (data: RawBuildingData[]): Building[] => {
-  return data.map(item => ({
-    id: item[0],
-    owner: item[1],
-    units: item[2],
-    maxUnits: 100, // Base max units
-    level: item[3],
-    position: item[4],
-    isInvulnerable: item[5] || false,
-  }));
+  console.log('[initialData.ts] Starting to map raw building data to Building objects');
+  if (!data || !Array.isArray(data)) {
+    console.error('[initialData.ts] ERROR: Invalid initialBuildingData:', data);
+    return [];
+  }
+  
+  try {
+    const mappedBuildings = data.map(item => {
+      if (!item || !Array.isArray(item) || item.length < 5) {
+        console.error('[initialData.ts] ERROR: Invalid building item:', item);
+        return null;
+      }
+      
+      const building = {
+        id: item[0],
+        owner: item[1],
+        units: item[2],
+        maxUnits: 100, // Base max units
+        level: item[3],
+        position: item[4],
+        isInvulnerable: item[5] || false,
+        element: undefined // Will be set later
+      };
+      
+      console.log(`[initialData.ts] Mapped building ${building.id}:`, building);
+      return building;
+    }).filter(Boolean);
+    
+    console.log(`[initialData.ts] Successfully mapped ${mappedBuildings.length} buildings`);
+    return mappedBuildings;
+  } catch (error) {
+    console.error('[initialData.ts] ERROR in mapInitialDataToBuildings:', error);
+    return [];
+  }
 };
 
 export const initialBuildings = mapInitialDataToBuildings(initialBuildingData);
-console.log('[initialData.ts] Mapped initialBuildings:', JSON.stringify(initialBuildings.map(b => ({
+console.log('[initialData.ts] Final initialBuildings array:', initialBuildings);
+console.log('[initialData.ts] Mapped buildings summary:', initialBuildings.map(b => ({
   id: b.id,
   owner: b.owner,
   units: b.units,
   position: b.position
-}))));
+})));

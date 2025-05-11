@@ -105,16 +105,19 @@ export function useBuildingManagement(config: GameConfig) {
     aiElement: ElementType
   ) => {
     try {
-      console.log('Creating buildings from initial data...');
+      console.log('[useBuildingManagement] initializeBuildings called with:', { playerElement, aiElement });
+      console.log('[useBuildingManagement] Current buildings state:', buildings);
       
       if (!initialBuildingData || !Array.isArray(initialBuildingData)) {
-        console.error('Invalid initialBuildingData:', initialBuildingData);
+        console.error('[useBuildingManagement] ERROR: Invalid initialBuildingData:', initialBuildingData);
         throw new Error('Invalid building initialization data');
       }
       
-      const newBuildings = initialBuildingData.map((item) => {
+      console.log('[useBuildingManagement] initialBuildingData length:', initialBuildingData.length);
+      
+      const newBuildings = initialBuildingData.map((item, index) => {
         if (!item || !Array.isArray(item) || item.length < 5) {
-          console.error('Invalid building data item:', item);
+          console.error(`[useBuildingManagement] ERROR: Invalid building data item at index ${index}:`, item);
           throw new Error('Invalid building data item');
         }
         
@@ -128,7 +131,7 @@ export function useBuildingManagement(config: GameConfig) {
           buildingElement = aiElement;
         }
         
-        return {
+        const building = {
           id: item[0] as string,
           owner: owner,
           units: item[2] as number,
@@ -138,14 +141,20 @@ export function useBuildingManagement(config: GameConfig) {
           isInvulnerable: (item[5] as boolean) || false,
           element: buildingElement
         };
+        
+        console.log(`[useBuildingManagement] Created building ${building.id}:`, building);
+        return building;
       });
       
+      console.log('[useBuildingManagement] New buildings array created with length:', newBuildings.length);
+      console.log('[useBuildingManagement] First few buildings:', newBuildings.slice(0, 3));
+      
       setBuildings(newBuildings);
-      console.log('Buildings initialized:', newBuildings.length);
+      console.log('[useBuildingManagement] setBuildings called with new buildings array');
       
       return true;
     } catch (error) {
-      console.error('Error initializing buildings:', error);
+      console.error('[useBuildingManagement] ERROR initializing buildings:', error);
       return false;
     }
   }, [config.maxUnitsPerBuilding]);

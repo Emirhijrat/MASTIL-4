@@ -43,38 +43,50 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
     message
   } = useGameState();
 
-  // Moved logging statements here after buildings is defined
-  console.log('GameBoard.tsx rendering with buildings count:', buildings.length);
-  console.log('Buildings data:', JSON.stringify(buildings.map(b => ({
-    id: b.id,
-    owner: b.owner,
-    units: b.units,
-    position: b.position,
-    element: b.element
-  }))));
+  // Comprehensive building data logging
+  console.log('[GameBoard] useGameState returned buildings:', buildings);
+  console.log('[GameBoard] buildings type:', typeof buildings);
+  console.log('[GameBoard] buildings is array:', Array.isArray(buildings));
+  console.log('[GameBoard] buildings length:', buildings?.length || 0);
+  
+  if (buildings && buildings.length > 0) {
+    console.log('[GameBoard] First building:', buildings[0]);
+    console.log('[GameBoard] Buildings data summary:', JSON.stringify(buildings.map(b => ({
+      id: b.id,
+      owner: b.owner,
+      units: b.units,
+      position: b.position,
+      element: b.element
+    }))));
+  } else {
+    console.error('[GameBoard] No buildings available for rendering!');
+  }
 
   useEffect(() => {
-    console.log('[GameBoard.tsx] Component mounted.');
-    return () => console.log('[GameBoard.tsx] Component unmounted.');
+    console.log('[GameBoard] Component mounted.');
+    return () => console.log('[GameBoard] Component unmounted.');
   }, []);
 
   useEffect(() => {
-    console.log('=== GAMEBOARD STATE UPDATE ===');
-    console.log('buildings:', buildings.map(b => ({ 
-      id: b.id, 
-      owner: b.owner,
-      element: b.element 
-    })));
-    console.log('selectedBuildingId:', selectedBuildingId);
+    console.log('[GameBoard] Buildings or selection changed:');
+    console.log('[GameBoard] buildings length:', buildings?.length || 0);
+    console.log('[GameBoard] selectedBuildingId:', selectedBuildingId);
+    
+    if (buildings && buildings.length > 0) {
+      const ownerCounts = {
+        player: buildings.filter(b => b.owner === 'player').length,
+        enemy: buildings.filter(b => b.owner === 'enemy').length,
+        neutral: buildings.filter(b => b.owner === 'neutral').length
+      };
+      console.log('[GameBoard] Building owners distribution:', ownerCounts);
+    }
   }, [buildings, selectedBuildingId]);
 
   const handleCoordinateUpdate = (fieldId: string, x: number, y: number) => {
-    console.log(`Coordinate update for ${fieldId}: x=${x}, y=${y}`);
-    // For now, just log the coordinates. We'll implement the actual update later
-    // when we have a proper state management solution for coordinates.
+    console.log(`[GameBoard] Coordinate update for ${fieldId}: x=${x}, y=${y}`);
   };
 
-  console.log('Rendering main game board');
+  console.log('[GameBoard] About to render with buildings:', buildings?.length || 0);
   const buildingBaseSize = 6;
 
   return (
@@ -112,18 +124,30 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
 
         {/* Buildings */}
         <div className="buildings absolute inset-0 pointer-events-none">
-          {buildings.map(building => (
-            <BuildingComponent
-              key={building.id}
-              building={building}
-              selected={selectedBuildingId === building.id}
-              onClick={(id) => handleBuildingClick(id)}
-              upgradeCost={building.owner === 'player' ? getUpgradeCost(building.level) : undefined}
-              canUpgrade={building.owner === 'player' && (player?.gold || 0) >= getUpgradeCost(building.level)}
-              onUpgrade={building.owner === 'player' ? handleUpgrade : undefined}
-              unitsInProduction={unitsInProduction[building.id] || 0}
-            />
-          ))}
+          {console.log('[GameBoard] Before mapping buildings:', buildings?.length || 0, 'buildings')}
+          {buildings && buildings.length > 0 ? (
+            buildings.map(building => {
+              console.log(`[GameBoard] Rendering building ${building.id}:`, building);
+              return (
+                <BuildingComponent
+                  key={building.id}
+                  building={building}
+                  selected={selectedBuildingId === building.id}
+                  onClick={(id) => handleBuildingClick(id)}
+                  upgradeCost={building.owner === 'player' ? getUpgradeCost(building.level) : undefined}
+                  canUpgrade={building.owner === 'player' && (player?.gold || 0) >= getUpgradeCost(building.level)}
+                  onUpgrade={building.owner === 'player' ? handleUpgrade : undefined}
+                  unitsInProduction={unitsInProduction[building.id] || 0}
+                />
+              );
+            })
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-red-500">
+              {console.error('[GameBoard] No buildings to render!')}
+              <p>No buildings to display</p>
+            </div>
+          )}
+          {console.log('[GameBoard] After mapping buildings')}
         </div>
         
         {/* Unit animations layer */}
