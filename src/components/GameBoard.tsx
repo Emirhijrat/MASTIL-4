@@ -34,7 +34,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ onSettings, onExit }) => {
   console.log('[GameBoard] Received buildings prop directly from props:', { 
     onSettings, 
     onExit,
-    propsKeys: Object.keys(arguments[0] || {})
+    propsKeys: ['onSettings', 'onExit']
   });
   
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
