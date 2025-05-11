@@ -7,7 +7,6 @@ import { useBuildingManagement } from './useBuildingManagement';
 import { useNeutralBehavior } from './useNeutralBehavior';
 import useGameCommentary from './useGameCommentary';
 import { gameConfig as defaultGameConfig } from '../utils/gameConfig';
-import { initialBuildingData } from '../utils/initialData';
 
 export function useGameState(config: GameConfig = defaultGameConfig) {
   console.log('[useGameState] Hook called. Initializing states...');
@@ -245,9 +244,6 @@ export function useGameState(config: GameConfig = defaultGameConfig) {
 
       // Add the requested logs
       console.log('[handlePlayerSetup] Function START. Received playerElement:', element, 'aiElement:', assignedAiElement);
-      
-      // Log the initialBuildingData imported at the top of the file
-      console.log('[handlePlayerSetup] Raw initialBuildingData imported:', JSON.stringify(initialBuildingData));
       
       console.log('[handlePlayerSetup] Calling mapInitialDataToBuildings...');
 
