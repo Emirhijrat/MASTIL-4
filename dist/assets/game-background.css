@@ -1,0 +1,16 @@
+/* Game background styles */
+.game-area {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-image: url('https://iili.io/3vhdSja.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+/* Ensure the buildings container doesn't override the background */
+.buildings {
+  background-color: transparent !important;
+} 
