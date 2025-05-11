@@ -5,7 +5,7 @@ interface LoadingScreenProps {
 }
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = "wird gestartet..." }) => {
-  const version = "Version 1.0.4"; // Updated version number
+  const version = "Version 1.0.5"; // Updated version number
 
   // Ensure proper handling of device orientation changes
   useEffect(() => {
@@ -70,7 +70,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = "wird gestartet
 
       {/* Version Text - bottom-center with safe area handling */}
       <div 
-        className="version-text fixed text-sm text-gray-400/75 backdrop-blur-sm px-3 py-1 rounded-full z-20"
+        className="version-text fixed text-sm text-amber-200/75 bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full z-20"
         style={{
           bottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
           left: '50%',
